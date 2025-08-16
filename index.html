@@ -149,20 +149,23 @@
     </section>
   </main>
 
-  <!-- Firebase SDKs (compat Varianten, einfache Nutzung) -->
-  <script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-database-compat.js"></script>
+  <!-- Firebase (modular) & App-Logik -->
+  <script type="module">
+    /* ===== Firebase ES Modules ===== */
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.24.0/firebase-app.js";
+    import {
+      getDatabase, ref, push, onChildAdded
+    } from "https://www.gstatic.com/firebasejs/9.24.0/firebase-database.js";
 
-  <script>
-    // ---- Navigation ----
-    function show(id, btn){
+    /* ===== Navigation ===== */
+    window.show = (id, btn) => {
       document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
       document.getElementById(id).classList.add('active');
       document.querySelectorAll('nav button').forEach(b => b.removeAttribute('aria-current'));
-      if(btn) btn.setAttribute('aria-current','page');
-    }
+      if (btn) btn.setAttribute('aria-current', 'page');
+    };
 
-    // ---- QUIZ Daten (aus euren Angaben) ----
+    /* ===== Quiz-Daten (deine 10 Fragen) ===== */
     const questions = [
       { q: 'Welches Haushaltsgerät wird von Lea täglich genutzt und treibt Nils in den Wahnsinn?', a:['Trockner','Staubsauger','Wasserkocher'], correct:'Staubsauger' },
       { q: 'Wann sind Lea und Nils zusammengekommen?', a:['08.03.2017','18.03.2018','28.03.2017'], correct:'28.03.2017' },
@@ -176,128 +179,158 @@
       { q: 'Wer hat zuhause die Hosen an?', a:['Lea','Nils','Beide'], correct:'Beide' },
     ];
 
-    // ---- QUIZ Logik + Persistente Rangliste in Firebase ----
-    let quizUser = '';
+    /* ===== Firebase-Konfig (korrigierter storageBucket) ===== */
+    const firebaseConfig = {
+      apiKey: "AIzaSyDEYeCmTkVGf4pTLCS-s3fV9jo1ivVPMj8",
+      authDomain: "hochzeitschat.firebaseapp.com",
+      databaseURL: "https://hochzeitschat-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "hochzeitschat",
+      storageBucket: "hochzeitschat.appspot.com",        // wichtig
+      messagingSenderId: "180005609648",
+      appId: "1:180005609648:web:f8c8cd278a1e3830501b75"
+    };
 
-    function startQuiz(){
-      const name = document.getElementById('username').value.trim();
-      if(!name) return alert('Bitte gib einen Namen ein.');
+    let db;
+    try {
+      const app = initializeApp(firebaseConfig);
+      db = getDatabase(app);
+      console.log("Firebase initialisiert.");
+    } catch (e) {
+      console.error("Firebase-Init fehlgeschlagen:", e);
+      // UI funktioniert trotzdem (Buttons etc.), aber ohne Live-Speicherung
+    }
+
+    /* ===== QUIZ ===== */
+    let quizUser = "";
+    window.startQuiz = () => {
+      const nameEl = document.getElementById('username');
+      const name = (nameEl?.value || "").trim();
+      if (!name) return alert("Bitte gib einen Namen ein.");
       quizUser = name;
+
       const container = document.getElementById('questions');
-      container.innerHTML = '';
-      questions.forEach((q,i)=>{
+      container.innerHTML = "";
+      questions.forEach((q,i) => {
         const div = document.createElement('div');
         div.className = 'question';
         div.innerHTML = `<p><strong>${i+1}.</strong> ${q.q}</p>`;
-        const opts = q.a.map(ans=>`<label><input type="radio" name="q${i}" value="${ans}"> ${ans}</label>`).join('');
+        const opts = q.a.map(ans => `<label><input type="radio" name="q${i}" value="${ans}"> ${ans}</label>`).join('');
         const answers = document.createElement('div');
         answers.className = 'answers';
         answers.innerHTML = opts;
         div.appendChild(answers);
         container.appendChild(div);
       });
-      document.getElementById('quiz-login').style.display='none';
-      document.getElementById('quiz-form').style.display='block';
-    }
 
-    // ---- Firebase Init ----
-    const firebaseConfig = {
-      apiKey: "AIzaSyDEYeCmTkVGf4pTLCS-s3fV9jo1ivVPMj8",
-      authDomain: "hochzeitschat.firebaseapp.com",
-      databaseURL: "https://hochzeitschat-default-rtdb.europe-west1.firebasedatabase.app",
-      projectId: "hochzeitschat",
-      storageBucket: "hochzeitschat.appspot.com",
-      messagingSenderId: "180005609648",
-      appId: "1:180005609648:web:f8c8cd278a1e3830501b75"
+      document.getElementById('quiz-login').style.display = 'none';
+      document.getElementById('quiz-form').style.display = 'block';
     };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
 
-    // ---- Quiz Submit + Speicherung in Firebase ----
-    document.getElementById('quiz-form').addEventListener('submit', function(e){
-      e.preventDefault();
-      const data = new FormData(e.target);
-      let score = 0;
-      questions.forEach((q,i)=>{ if(data.get(`q${i}`) === q.correct) score++; });
-      // Speichern
-      db.ref('scores').push({ name: quizUser, score, total: questions.length, ts: Date.now() });
-      // Anzeige
-      document.getElementById('quiz-form').style.display='none';
-      const res = document.getElementById('result');
-      res.style.display='block';
-      res.textContent = `${quizUser}, du hast ${score} von ${questions.length} Punkten erreicht!`;
-    });
+    const quizForm = document.getElementById('quiz-form');
+    if (quizForm) {
+      quizForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const data = new FormData(quizForm);
+        let score = 0;
+        questions.forEach((q,i) => {
+          if (data.get(`q${i}`) === q.correct) score++;
+        });
 
-    // ---- Rangliste live aus Firebase laden (sortiert im Client) ----
-    const scores = [];
+        // In DB speichern (falls verfügbar)
+        try {
+          if (db) push(ref(db, 'scores'), { name: quizUser, score, total: questions.length, ts: Date.now() });
+        } catch (err) {
+          console.warn("Score konnte nicht gespeichert werden:", err);
+        }
+
+        quizForm.style.display = 'none';
+        const res = document.getElementById('result');
+        res.style.display = 'block';
+        res.textContent = `${quizUser}, du hast ${score} von ${questions.length} Punkten erreicht!`;
+      });
+    }
+
+    // Rangliste live laden
     const sbEl = document.getElementById('scoreboard');
-    function renderScores(){
-      const sorted = [...scores].sort((a,b)=> b.score - a.score || a.ts - b.ts);
-      sbEl.innerHTML = sorted.map((s,i)=>`<li><span>${i+1}. ${s.name}</span><strong>${s.score}/${s.total}</strong></li>`).join('');
+    const scores = [];
+    if (db && sbEl) {
+      onChildAdded(ref(db, 'scores'), (snap) => {
+        scores.push(snap.val());
+        const sorted = [...scores].sort((a,b) => b.score - a.score || a.ts - b.ts);
+        sbEl.innerHTML = sorted.map((s,i) => `<li><span>${i+1}. ${s.name}</span><strong>${s.score}/${s.total}</strong></li>`).join('');
+      });
     }
-    db.ref('scores').on('child_added', snap=>{ const v=snap.val(); scores.push(v); renderScores(); });
 
-    // ---- CHAT ----
-    let chatUser = '';
-    function joinChat(){
+    /* ===== CHAT ===== */
+    let chatUser = "";
+    window.joinChat = () => {
       const input = document.getElementById('chatName');
-      const n = input.value.trim();
-      if(!n) return alert('Bitte gib einen Namen ein.');
+      const n = (input?.value || "").trim();
+      if (!n) return alert("Bitte gib einen Namen ein.");
       chatUser = n;
-      document.getElementById('chat-login').style.display='none';
-      document.getElementById('chatBox').style.display='block';
-    }
-    function sendMessage(){
-      const inp = document.getElementById('messageInput');
-      const msg = inp.value.trim();
-      if(!msg || !chatUser) return;
-      db.ref('messages').push({ name: chatUser, message: msg, ts: Date.now() });
-      inp.value='';
-    }
-    const messagesEl = document.getElementById('messages');
-    db.ref('messages').on('child_added', snap=>{
-      const m = snap.val();
-      const d = new Date(m.ts);
-      const time = d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-      const div = document.createElement('div');
-      div.className='msg';
-      div.innerHTML = `<div class="meta">[${time}] <strong>${m.name}</strong></div><div>${m.message}</div>`;
-      messagesEl.appendChild(div);
-      messagesEl.scrollTop = messagesEl.scrollHeight;
-    });
+      document.getElementById('chat-login').style.display = 'none';
+      document.getElementById('chatBox').style.display = 'block';
+    };
 
-    // ---- Über uns: offene Antworten speichern & anzeigen ----
-    function submitAbout(){
-      const whoLea = (document.getElementById('aboutLea').value || '').trim();
-      const whoNils = (document.getElementById('aboutNils').value || '').trim();
-      const from = (document.getElementById('aboutName').value || '').trim();
-      if(!whoLea && !whoNils) return alert('Bitte schreibe etwas zu Lea oder Nils.');
-      const payloads = [];
-      if(whoLea) payloads.push({ who:'Lea', text: whoLea, from, ts: Date.now() });
-      if(whoNils) payloads.push({ who:'Nils', text: whoNils, from, ts: Date.now() });
-      const ref = db.ref('about');
-      payloads.forEach(p => ref.push(p));
-      document.getElementById('aboutLea').value='';
-      document.getElementById('aboutNils').value='';
-      document.getElementById('aboutName').value='';
+    window.sendMessage = () => {
+      const inp = document.getElementById('messageInput');
+      const msg = (inp?.value || "").trim();
+      if (!msg || !chatUser) return;
+      try {
+        if (db) push(ref(db, 'messages'), { name: chatUser, message: msg, ts: Date.now() });
+      } catch (err) {
+        console.warn("Nachricht konnte nicht gespeichert werden:", err);
+      }
+      inp.value = "";
+    };
+
+    const messagesEl = document.getElementById('messages');
+    if (db && messagesEl) {
+      onChildAdded(ref(db, 'messages'), (snap) => {
+        const m = snap.val();
+        const time = new Date(m.ts).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+        const div = document.createElement('div');
+        div.className = 'msg';
+        div.innerHTML = `<div class="meta">[${time}] <strong>${m.name}</strong></div><div>${m.message}</div>`;
+        messagesEl.appendChild(div);
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+      });
     }
-    window.submitAbout = submitAbout;
+
+    /* ===== ÜBER UNS ===== */
+    window.submitAbout = () => {
+      const lea = (document.getElementById('aboutLea')?.value || "").trim();
+      const nils = (document.getElementById('aboutNils')?.value || "").trim();
+      const from = (document.getElementById('aboutName')?.value || "").trim();
+      if (!lea && !nils) return alert("Bitte schreibe etwas zu Lea oder Nils.");
+
+      try {
+        if (db) {
+          if (lea) push(ref(db, 'about'), { who:'Lea', text: lea, from, ts: Date.now() });
+          if (nils) push(ref(db, 'about'), { who:'Nils', text: nils, from, ts: Date.now() });
+        }
+      } catch (err) {
+        console.warn("Über-uns konnte nicht gespeichert werden:", err);
+      }
+
+      const l = document.getElementById('aboutLea'); if (l) l.value = "";
+      const n = document.getElementById('aboutNils'); if (n) n.value = "";
+      const f = document.getElementById('aboutName'); if (f) f.value = "";
+    };
 
     const aboutList = document.getElementById('aboutList');
-    db.ref('about').on('child_added', snap=>{
-      const v = snap.val();
-      const card = document.createElement('div');
-      card.className = 'question';
-      const from = v.from ? ` – <span class="muted">von ${v.from}</span>` : '';
-      card.innerHTML = `<strong>${v.who}</strong>${from}<div style="margin-top:6px;">${v.text}</div>`;
-      aboutList.appendChild(card);
-    });
+    if (db && aboutList) {
+      onChildAdded(ref(db, 'about'), (snap) => {
+        const v = snap.val();
+        const card = document.createElement('div');
+        card.className = 'question';
+        const from = v.from ? ` – <span class="muted">von ${v.from}</span>` : '';
+        card.innerHTML = `<strong>${v.who}</strong>${from}<div style="margin-top:6px;">${v.text}</div>`;
+        aboutList.appendChild(card);
+      });
+    }
 
-    // Expose needed functions to window
-    window.startQuiz = startQuiz;
-    window.joinChat = joinChat;
-    window.sendMessage = sendMessage;
+    console.log("App-Skript geladen. Wenn etwas nicht reagiert: F12 → Konsole prüfen.");
   </script>
 </body>
 </html>
-
