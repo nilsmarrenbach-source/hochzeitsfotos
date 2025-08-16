@@ -1,17 +1,112 @@
-
 <!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Hochzeitsfotos</title>
+    <title>Willkommen zur Hochzeit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            font-family: sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            background: #f9f9f9;
+        }
+        header {
+            background: #000;
+            color: white;
+            padding: 20px 0;
+            font-size: 24px;
+        }
+        nav {
+            margin: 20px;
+        }
+        nav a {
+            display: inline-block;
+            margin: 10px;
+            padding: 12px 24px;
+            background: #000;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+        }
+        .section {
+            display: none;
+            padding: 20px;
+        }
+        .active {
+            display: block;
+        }
+        iframe {
+            width: 90%;
+            height: 500px;
+            border: none;
+        }
+        input[type="text"] {
+            width: 80%;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        button {
+            padding: 10px 20px;
+            margin-top: 10px;
+            background-color: black;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
 </head>
-<body style="font-family: sans-serif; text-align: center; padding: 50px;">
-    <h1>📸 Hochzeitsfotos</h1>
-    <p>Was möchtest du tun?</p>
-    <div style="margin-top: 30px;">
-        <a href="https://www.dropbox.com/request/yq0IJGtF4kC2J1Cfqyg3" target="_blank" style="display: inline-block; padding: 15px 25px; background: black; color: white; text-decoration: none; border-radius: 6px; margin: 10px;">📥 Fotos hochladen</a>
-        <a href="https://www.dropbox.com/scl/fo/2avn44dduw9frc86a2vuc/ADTyW_6937n1flsezIGobfQ?rlkey=si7t1g01cc8e8moy5oeahb6bo&st=8l1z0tg5&dl=0" target="_blank" style="display: inline-block; padding: 15px 25px; background: gray; color: white; text-decoration: none; border-radius: 6px; margin: 10px;">📤 Fotos ansehen</a>
+<body>
+    <header>Willkommen zur Hochzeit!</header>
+    <nav>
+        <a href="#" onclick="show('fotos')">📸 Fotos</a>
+        <a href="#" onclick="show('speisekarte')">🍽️ Speisekarte</a>
+        <a href="#" onclick="show('rede')">💬 Hochzeitsrede</a>
+        <a href="#" onclick="show('quiz')">❓ Quiz</a>
+        <a href="#" onclick="show('gaesteantworten')">📝 Über uns</a>
+    </nav>
+
+    <div id="fotos" class="section active">
+        <h2>📷 Fotos hochladen oder ansehen</h2>
+        <p><a href="https://www.dropbox.com/request/yq0IJGtF4kC2J1Cfqyg3" target="_blank">📥 Fotos hochladen</a></p>
+        <p><a href="https://www.dropbox.com/scl/fo/2avn44dduw9frc86a2vuc/ADTyW_6937n1flsezIGobfQ?rlkey=si7t1g01cc8e8moy5oeahb6bo&st=8l1z0tg5&dl=0" target="_blank">📤 Fotos ansehen</a></p>
     </div>
-    <p style="margin-top: 50px; font-size: 0.9em; color: #555;">Danke, dass ihr Teil unseres Tages seid!</p>
+
+    <div id="speisekarte" class="section">
+        <h2>🍽️ Speisekarte</h2>
+        <p>Hier könnt ihr euch unser Menü anschauen.</p>
+        <iframe src="speisekarte.pdf"></iframe>
+    </div>
+
+    <div id="rede" class="section">
+        <h2>💬 Unsere Hochzeitsrede</h2>
+        <p>Wir freuen uns, diesen Moment mit euch zu teilen.</p>
+        <iframe src="hochzeitsrede.pdf"></iframe>
+    </div>
+
+    <div id="quiz" class="section">
+        <h2>❓ Hochzeitsquiz</h2>
+        <p>Demnächst verfügbar – hier werdet ihr 10 Fragen beantworten und euer Ranking sehen!</p>
+    </div>
+
+    <div id="gaesteantworten" class="section">
+        <h2>📝 Was macht uns aus?</h2>
+        <p>Was macht die Braut aus?</p>
+        <input type="text" placeholder="Antwort zur Braut...">
+        <p>Was macht den Bräutigam aus?</p>
+        <input type="text" placeholder="Antwort zum Bräutigam...">
+        <br>
+        <button>Antworten absenden</button>
+    </div>
+
+    <script>
+        function show(id) {
+            const sections = document.querySelectorAll('.section');
+            sections.forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+    </script>
 </body>
 </html>
