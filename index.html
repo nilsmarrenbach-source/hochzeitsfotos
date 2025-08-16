@@ -1,207 +1,303 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <title>Willkommen zur Hochzeit</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <style>
-        body {
-            font-family: sans-serif;
-            text-align: center;
-            margin: 0;
-            padding: 0;
-            background: #f9f9f9;
-        }
-        header {
-            background: #000;
-            color: white;
-            padding: 20px 0;
-            font-size: 24px;
-        }
-        nav {
-            margin: 20px;
-        }
-        nav a {
-            display: inline-block;
-            margin: 10px;
-            padding: 12px 24px;
-            background: #000;
-            color: white;
-            text-decoration: none;
-            border-radius: 6px;
-        }
-        .section {
-            display: none;
-            padding: 20px;
-        }
-        .active {
-            display: block;
-        }
-        .question {
-            margin-bottom: 20px;
-        }
-        .answers label {
-            display: block;
-            margin: 5px 0;
-        }
-        .scoreboard {
-            margin-top: 30px;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hochzeit – Menü, Fotos, Quiz & Chat</title>
+  <style>
+    :root { --bg:#f8f8f8; --fg:#111; --muted:#666; --accent:#000; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", sans-serif; background:var(--bg); color:var(--fg); text-align:center; }
+    header { background:var(--accent); color:#fff; padding:22px 16px; letter-spacing:.3px; }
+    header h1 { margin:0; font-weight:700; font-size:24px; }
+    nav { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; padding:16px; }
+    nav button { appearance:none; border:none; background:var(--accent); color:#fff; padding:10px 16px; border-radius:10px; cursor:pointer; font-weight:600; }
+    nav button[aria-current="page"] { outline:2px solid #000; outline-offset:2px; }
+    main { max-width:1000px; margin:0 auto; padding:10px 16px 40px; }
+    .section { display:none; text-align:left; background:#fff; padding:22px; border-radius:16px; box-shadow:0 6px 20px rgba(0,0,0,.06); margin-top:8px; }
+    .section.active { display:block; }
+    h2 { margin-top:0; text-align:center; }
+    a.btn, .btn { display:inline-block; background:#000; color:#fff; text-decoration:none; padding:10px 16px; border-radius:10px; margin:6px 6px 0; }
+    .grid2 { display:grid; grid-template-columns:1fr; gap:18px; }
+    @media (min-width:700px){ .grid2 { grid-template-columns:1fr 1fr; } }
+    iframe { width:100%; height:70vh; border:none; background:#f1f1f1; border-radius:12px; }
+    /* Quiz */
+    .question { padding:12px 14px; border:1px solid #e7e7e7; border-radius:10px; margin-bottom:12px; }
+    .answers label { display:block; margin:6px 0; }
+    .muted { color:var(--muted); font-size:.95rem; }
+    ul#scoreboard { list-style:none; padding:0; margin:0; }
+    ul#scoreboard li { padding:8px 10px; border-bottom:1px dashed #e5e5e5; display:flex; justify-content:space-between; }
+    /* Chat */
+    #messages { height:340px; overflow:auto; border:1px solid #e7e7e7; border-radius:12px; padding:12px; background:#fafafa; }
+    .msg { text-wrap: pretty; padding:6px 8px; margin:6px 0; border-radius:8px; background:#fff; border:1px solid #efefef; }
+    .msg .meta { font-size:.8rem; color:#777; }
+    .row { display:flex; gap:8px; align-items:center; }
+    input[type="text"], textarea { width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:10px; font:inherit; }
+  </style>
 </head>
 <body>
-<header>Willkommen zur Hochzeit!</header>
-<nav>
-    <a href="#" onclick="show('fotos')">📸 Fotos</a>
-    <a href="#" onclick="show('speisekarte')">🍽️ Speisekarte</a>
-    <a href="#" onclick="show('rede')">💬 Hochzeitsrede</a>
-    <a href="#" onclick="show('quiz')">❓ Quiz</a>
-    <a href="#" onclick="show('gaesteantworten')">📝 Über uns</a>
-</nav>
-<div id="fotos" class="section active">
-    <h2>📷 Fotos hochladen oder ansehen</h2>
-    <p><a href="https://www.dropbox.com/request/yq0IJGtF4kC2J1Cfqyg3" target="_blank">📥 Fotos hochladen</a></p>
-    <p><a href="https://www.dropbox.com/scl/fo/2avn44dduw9frc86a2vuc/ADTyW_6937n1flsezIGobfQ?rlkey=si7t1g01cc8e8moy5oeahb6bo&st=8l1z0tg5&dl=0" target="_blank">📤 Fotos ansehen</a></p>
-</div>
-<div id="speisekarte" class="section">
-    <h2>🍽️ Speisekarte</h2>
-    <iframe src="speisekarte.pdf"></iframe>
-</div>
-<div id="rede" class="section">
-    <h2>💬 Unsere Hochzeitsrede</h2>
-    <iframe src="hochzeitsrede.pdf"></iframe>
-</div>
-<div id="quiz" class="section">
-    <h2>❓ Hochzeitsquiz</h2>
-    <div id="quiz-login">
+  <header>
+    <h1>Willkommen zur Hochzeit – Menü, Fotos, Quiz & Chat</h1>
+  </header>
+
+  <nav aria-label="Hauptnavigation">
+    <button onclick="show('fotos', this)" aria-current="page">📸 Fotos</button>
+    <button onclick="show('speisekarte', this)">🍽️ Speisekarte</button>
+    <button onclick="show('rede', this)">💬 Hochzeitsrede</button>
+    <button onclick="show('quiz', this)">❓ Quiz</button>
+    <button onclick="show('chat', this)">💬 Chat</button>
+    <button onclick="show('gaesteantworten', this)">📝 Über uns</button>
+  </nav>
+
+  <main>
+    <!-- Fotos -->
+    <section id="fotos" class="section active">
+      <h2>📷 Fotos hochladen oder ansehen</h2>
+      <p class="muted" style="text-align:center">Wählt eine Option:</p>
+      <div class="grid2" style="text-align:center">
+        <div>
+          <h3>Hochladen</h3>
+          <p>Teile eure schönsten Momente mit uns!</p>
+          <a class="btn" target="_blank" href="https://www.dropbox.com/request/yq0IJGtF4kC2J1Cfqyg3">📥 Fotos hochladen</a>
+        </div>
+        <div>
+          <h3>Ansehen & Herunterladen</h3>
+          <p>Alle Bilder der Gäste an einem Ort.</p>
+          <a class="btn" target="_blank" href="https://www.dropbox.com/scl/fo/2avn44dduw9frc86a2vuc/ADTyW_6937n1flsezIGobfQ?rlkey=si7t1g01cc8e8moy5oeahb6bo&st=8l1z0tg5&dl=0">📤 Fotos ansehen</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Speisekarte -->
+    <section id="speisekarte" class="section">
+      <h2>🍽️ Speisekarte</h2>
+      <p class="muted" style="text-align:center">Legt eure PDF als <code>speisekarte.pdf</code> in den Ordner.</p>
+      <iframe src="speisekarte.pdf" title="Speisekarte"></iframe>
+    </section>
+
+    <!-- Rede -->
+    <section id="rede" class="section">
+      <h2>💬 Hochzeitsrede</h2>
+      <p class="muted" style="text-align:center">Legt eure PDF als <code>hochzeitsrede.pdf</code> in den Ordner.</p>
+      <iframe src="hochzeitsrede.pdf" title="Hochzeitsrede"></iframe>
+    </section>
+
+    <!-- Quiz -->
+    <section id="quiz" class="section">
+      <h2>❓ Hochzeitsquiz</h2>
+      <div id="quiz-login">
         <p>Gib deinen Namen ein, um am Quiz teilzunehmen:</p>
-        <input type="text" id="username" placeholder="Dein Name">
-        <br>
-        <button onclick="startQuiz()">Quiz starten</button>
-    </div>
-    <form id="quiz-form" style="display:none">
+        <div class="row" style="justify-content:center">
+          <input type="text" id="username" placeholder="Dein Name" style="max-width:360px;" />
+          <button class="btn" onclick="startQuiz()">Quiz starten</button>
+        </div>
+      </div>
+      <form id="quiz-form" style="display:none">
         <div id="questions"></div>
-        <button type="submit">Antworten absenden</button>
-    </form>
-    <div id="result" style="display:none"></div>
-    <div class="scoreboard">
-        <h3>🏆 Rangliste</h3>
+        <div style="text-align:center; margin-top:12px">
+          <button class="btn" type="submit">Antworten absenden</button>
+        </div>
+      </form>
+      <div id="result" style="display:none; text-align:center; font-weight:600; margin-top:14px"></div>
+
+      <div class="scoreboard">
+        <h3 style="text-align:center">🏆 Rangliste</h3>
         <ul id="scoreboard"></ul>
-    </div>
-</div>
-<div id="gaesteantworten" class="section">
-    <h2>📝 Was macht uns aus?</h2>
-    <input type="text" placeholder="Antwort zur Braut...">
-    <input type="text" placeholder="Antwort zum Bräutigam...">
-    <br>
-    <button>Antworten absenden</button>
-</div>
-<script>
+      </div>
+    </section>
+
+    <!-- Chat -->
+    <section id="chat" class="section">
+      <h2>💬 Hochzeitschat</h2>
+      <div id="chat-login" class="row" style="justify-content:center; margin-bottom:12px;">
+        <input type="text" id="chatName" placeholder="Dein Name" style="max-width:360px;" />
+        <button class="btn" onclick="joinChat()">Chat betreten</button>
+      </div>
+      <div id="chatBox" style="display:none;">
+        <div id="messages"></div>
+        <div class="row" style="margin-top:10px;">
+          <input type="text" id="messageInput" placeholder="Deine Nachricht" />
+          <button class="btn" onclick="sendMessage()">Senden</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Über uns: offene Antworten -->
+    <section id="gaesteantworten" class="section">
+      <h2>📝 Über uns</h2>
+      <p class="muted">Schreib eine kurze Zeile – was macht <strong>Lea</strong> und was macht <strong>Nils</strong> aus?</p>
+      <div class="row" style="margin-bottom:8px;">
+        <input id="aboutName" type="text" placeholder="Dein Name (optional)" />
+      </div>
+      <div class="grid2">
+        <div>
+          <h3>Zu Lea</h3>
+          <textarea id="aboutLea" rows="4" placeholder="Dein Satz zu Lea..."></textarea>
+        </div>
+        <div>
+          <h3>Zu Nils</h3>
+          <textarea id="aboutNils" rows="4" placeholder="Dein Satz zu Nils..."></textarea>
+        </div>
+      </div>
+      <div style="text-align:center; margin-top:10px;">
+        <button class="btn" onclick="submitAbout()">Absenden</button>
+      </div>
+      <div style="margin-top:16px;">
+        <h3 style="text-align:center">Eure Antworten (live)</h3>
+        <div id="aboutList" class="grid2"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Firebase SDKs (compat Varianten, einfache Nutzung) -->
+  <script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-database-compat.js"></script>
+
+  <script>
+    // ---- Navigation ----
+    function show(id, btn){
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      document.querySelectorAll('nav button').forEach(b => b.removeAttribute('aria-current'));
+      if(btn) btn.setAttribute('aria-current','page');
+    }
+
+    // ---- QUIZ Daten (aus euren Angaben) ----
     const questions = [
-        {
-            q: "Welches Haushaltsgerät wird von Lea täglich genutzt und treibt Nils in den Wahnsinn?",
-            a: ["Trockner", "Staubsauger", "Wasserkocher"],
-            correct: "Staubsauger"
-        },
-        {
-            q: "Wann sind Lea und Nils zusammengekommen?",
-            a: ["08.03.2017", "18.03.2018", "28.03.2017"],
-            correct: "28.03.2017"
-        },
-        {
-            q: "Wer von deren Freunden war beim ersten Date anwesend?",
-            a: ["Theresa", "Lea-Stutzinger", "Markus"],
-            correct: "Theresa"
-        },
-        {
-            q: "Welche Handgeste hat Lea ihrem Schwiegervater beim ersten Kennenlernen zur Begrüßung gezeigt?",
-            a: ["Peacezeichen", "Gewinkt", "High 5"],
-            correct: "Peacezeichen"
-        },
-        {
-            q: "Was war Nils schlimmstes Verbrechen bei seinen Schwiegereltern?",
-            a: ["Nicht abgespült", "Aus dem Dachfenster übergeben", "Schraubschlüssel behalten"],
-            correct: "Aus dem Dachfenster übergeben"
-        },
-        {
-            q: "Welche Krankheit schreibt Lea Nils zu?",
-            a: ["Autismus", "Achs", "Zwangsstörung"],
-            correct: "Autismus"
-        },
-        {
-            q: "Zu was wird Lea wenn sie schlecht gelaunt ist?",
-            a: ["Der unglaubliche Hulk", "Giftzwerg", "Fruchtzwerg"],
-            correct: "Giftzwerg"
-        },
-        {
-            q: "Wie lautet Nils legendärer Spitzname?",
-            a: ["Bübchen", "Mamabärchen", "Püppelmann"],
-            correct: "Püppelmann"
-        },
-        {
-            q: "Was ist Nils und Leas Einrichtungsstil?",
-            a: ["Antik", "Modern", "Eklektizismus"],
-            correct: "Eklektizismus"
-        },
-        {
-            q: "Wer hat zuhause die Hosen an?",
-            a: ["Lea", "Nils", "Beide"],
-            correct: "Beide"
-        }
+      { q: 'Welches Haushaltsgerät wird von Lea täglich genutzt und treibt Nils in den Wahnsinn?', a:['Trockner','Staubsauger','Wasserkocher'], correct:'Staubsauger' },
+      { q: 'Wann sind Lea und Nils zusammengekommen?', a:['08.03.2017','18.03.2018','28.03.2017'], correct:'28.03.2017' },
+      { q: 'Wer von deren Freunden war beim ersten Date anwesend?', a:['Theresa','Lea-Stutzinger','Markus'], correct:'Theresa' },
+      { q: 'Welche Handgeste hat Lea ihrem Schwiegervater beim ersten Kennenlernen zur Begrüßung gezeigt?', a:['Peacezeichen','Gewinkt','High 5'], correct:'Peacezeichen' },
+      { q: 'Was war Nils schlimmstes Verbrechen bei seinen Schwiegereltern?', a:['nichtabgespült nach langer Toilettensitzung','aus dem Dachfenster übergeben','Ollis Schraubschlüssel geliehen und nie wiedergegeben'], correct:'aus dem Dachfenster übergeben' },
+      { q: 'Welche Krankheit schreibt Lea Nils zu?', a:['Autismus','Achs','Zwangsstörung'], correct:'Autismus' },
+      { q: 'Zu was wird Lea wenn sie schlecht gelaunt ist?', a:['dem unglaublichen Hulk','Giftzwerg','Fruchtzwerg'], correct:'Giftzwerg' },
+      { q: 'Wie lautet Nils legendärer durch seine Mutter vergebener Spitzname?', a:['bübchen','mamabärchen','püppelmann'], correct:'püppelmann' },
+      { q: 'Was ist Nils und Leas Einrichtungssteal?', a:['Antik','modern','Eklektizismus'], correct:'Eklektizismus' },
+      { q: 'Wer hat zuhause die Hosen an?', a:['Lea','Nils','Beide'], correct:'Beide' },
     ];
 
-    let scoreboardData = [];
+    // ---- QUIZ Logik + Persistente Rangliste in Firebase ----
+    let quizUser = '';
 
-    function show(id) {
-        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
+    function startQuiz(){
+      const name = document.getElementById('username').value.trim();
+      if(!name) return alert('Bitte gib einen Namen ein.');
+      quizUser = name;
+      const container = document.getElementById('questions');
+      container.innerHTML = '';
+      questions.forEach((q,i)=>{
+        const div = document.createElement('div');
+        div.className = 'question';
+        div.innerHTML = `<p><strong>${i+1}.</strong> ${q.q}</p>`;
+        const opts = q.a.map(ans=>`<label><input type="radio" name="q${i}" value="${ans}"> ${ans}</label>`).join('');
+        const answers = document.createElement('div');
+        answers.className = 'answers';
+        answers.innerHTML = opts;
+        div.appendChild(answers);
+        container.appendChild(div);
+      });
+      document.getElementById('quiz-login').style.display='none';
+      document.getElementById('quiz-form').style.display='block';
     }
 
-    function startQuiz() {
-        const name = document.getElementById('username').value.trim();
-        if (!name) return alert("Bitte gib einen Namen ein!");
+    // ---- Firebase Init ----
+    const firebaseConfig = {
+      apiKey: "AIzaSyDEYeCmTkVGf4pTLCS-s3fV9jo1ivVPMj8",
+      authDomain: "hochzeitschat.firebaseapp.com",
+      databaseURL: "https://hochzeitschat-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "hochzeitschat",
+      storageBucket: "hochzeitschat.firebasestorage.app",
+      messagingSenderId: "180005609648",
+      appId: "1:180005609648:web:f8c8cd278a1e3830501b75"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-        const container = document.getElementById('questions');
-        container.innerHTML = '';
+    // ---- Quiz Submit + Speicherung in Firebase ----
+    document.getElementById('quiz-form').addEventListener('submit', function(e){
+      e.preventDefault();
+      const data = new FormData(e.target);
+      let score = 0;
+      questions.forEach((q,i)=>{ if(data.get(`q${i}`) === q.correct) score++; });
+      // Speichern
+      db.ref('scores').push({ name: quizUser, score, total: questions.length, ts: Date.now() });
+      // Anzeige
+      document.getElementById('quiz-form').style.display='none';
+      const res = document.getElementById('result');
+      res.style.display='block';
+      res.textContent = `${quizUser}, du hast ${score} von ${questions.length} Punkten erreicht!`;
+    });
 
-        questions.forEach((q, i) => {
-            const div = document.createElement('div');
-            div.classList.add('question');
-            div.innerHTML = `<p>${i + 1}. ${q.q}</p>`;
-
-            const options = q.a.map(ans =>
-                `<label><input type="radio" name="q${i}" value="${ans}"> ${ans}</label>`
-            ).join('');
-
-            const answerDiv = document.createElement('div');
-            answerDiv.classList.add('answers');
-            answerDiv.innerHTML = options;
-
-            div.appendChild(answerDiv);
-            container.appendChild(div);
-        });
-
-        document.getElementById('quiz-login').style.display = 'none';
-        document.getElementById('quiz-form').style.display = 'block';
-
-        document.getElementById('quiz-form').onsubmit = function(e) {
-            e.preventDefault();
-            const formData = new FormData(e.target);
-            let score = 0;
-            questions.forEach((q, i) => {
-                if (formData.get(`q${i}`) === q.correct) score++;
-            });
-            scoreboardData.push({ name, score });
-            scoreboardData.sort((a, b) => b.score - a.score);
-
-            document.getElementById('quiz-form').style.display = 'none';
-            document.getElementById('result').style.display = 'block';
-            document.getElementById('result').innerText = `${name}, du hast ${score} von ${questions.length} Punkten erreicht!`;
-
-            const sb = document.getElementById('scoreboard');
-            sb.innerHTML = scoreboardData.map(e => `<li>${e.name}: ${e.score} Punkte</li>`).join('');
-        };
+    // ---- Rangliste live aus Firebase laden (sortiert im Client) ----
+    const scores = [];
+    const sbEl = document.getElementById('scoreboard');
+    function renderScores(){
+      const sorted = [...scores].sort((a,b)=> b.score - a.score || a.ts - b.ts);
+      sbEl.innerHTML = sorted.map((s,i)=>`<li><span>${i+1}. ${s.name}</span><strong>${s.score}/${s.total}</strong></li>`).join('');
     }
-</script>
+    db.ref('scores').on('child_added', snap=>{ const v=snap.val(); scores.push(v); renderScores(); });
+
+    // ---- CHAT ----
+    let chatUser = '';
+    function joinChat(){
+      const input = document.getElementById('chatName');
+      const n = input.value.trim();
+      if(!n) return alert('Bitte gib einen Namen ein.');
+      chatUser = n;
+      document.getElementById('chat-login').style.display='none';
+      document.getElementById('chatBox').style.display='block';
+    }
+    function sendMessage(){
+      const inp = document.getElementById('messageInput');
+      const msg = inp.value.trim();
+      if(!msg || !chatUser) return;
+      db.ref('messages').push({ name: chatUser, message: msg, ts: Date.now() });
+      inp.value='';
+    }
+    const messagesEl = document.getElementById('messages');
+    db.ref('messages').on('child_added', snap=>{
+      const m = snap.val();
+      const d = new Date(m.ts);
+      const time = d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+      const div = document.createElement('div');
+      div.className='msg';
+      div.innerHTML = `<div class="meta">[${time}] <strong>${m.name}</strong></div><div>${m.message}</div>`;
+      messagesEl.appendChild(div);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    });
+
+    // ---- Über uns: offene Antworten speichern & anzeigen ----
+    function submitAbout(){
+      const whoLea = (document.getElementById('aboutLea').value || '').trim();
+      const whoNils = (document.getElementById('aboutNils').value || '').trim();
+      const from = (document.getElementById('aboutName').value || '').trim();
+      if(!whoLea && !whoNils) return alert('Bitte schreibe etwas zu Lea oder Nils.');
+      const payloads = [];
+      if(whoLea) payloads.push({ who:'Lea', text: whoLea, from, ts: Date.now() });
+      if(whoNils) payloads.push({ who:'Nils', text: whoNils, from, ts: Date.now() });
+      const ref = db.ref('about');
+      payloads.forEach(p => ref.push(p));
+      document.getElementById('aboutLea').value='';
+      document.getElementById('aboutNils').value='';
+      document.getElementById('aboutName').value='';
+    }
+    window.submitAbout = submitAbout;
+
+    const aboutList = document.getElementById('aboutList');
+    db.ref('about').on('child_added', snap=>{
+      const v = snap.val();
+      const card = document.createElement('div');
+      card.className = 'question';
+      const from = v.from ? ` – <span class="muted">von ${v.from}</span>` : '';
+      card.innerHTML = `<strong>${v.who}</strong>${from}<div style="margin-top:6px;">${v.text}</div>`;
+      aboutList.appendChild(card);
+    });
+
+    // Expose needed functions to window
+    window.startQuiz = startQuiz;
+    window.joinChat = joinChat;
+    window.sendMessage = sendMessage;
+  </script>
 </body>
 </html>
+
