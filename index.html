@@ -42,12 +42,12 @@
   </header>
 
   <nav aria-label="Hauptnavigation">
-    <button onclick="show('fotos', this)" aria-current="page">📸 Fotos</button>
-    <button onclick="show('speisekarte', this)">🍽️ Speisekarte</button>
-    <button onclick="show('rede', this)">💬 Hochzeitsrede</button>
-    <button onclick="show('quiz', this)">❓ Quiz</button>
-    <button onclick="show('chat', this)">💬 Chat</button>
-    <button onclick="show('gaesteantworten', this)">📝 Über uns</button>
+    <button data-target="fotos" aria-current="page">📸 Fotos</button>
+    <button data-target="speisekarte">🍽️ Speisekarte</button>
+    <button data-target="rede">💬 Hochzeitsrede</button>
+    <button data-target="quiz">❓ Quiz</button>
+    <button data-target="chat">💬 Chat</button>
+    <button data-target="gaesteantworten">📝 Über uns</button>
   </nav>
 
   <main>
@@ -72,7 +72,7 @@
     <!-- Speisekarte -->
     <section id="speisekarte" class="section">
       <h2>🍽️ Speisekarte</h2>
-      <p class="note">Lege eine Datei <code>speisekarte.pdf</code> in dein Repo. Falls sie fehlt, erscheint unten eine Notiz.</p>
+      <p class="note">Lege eine Datei <code>speisekarte.pdf</code> in dein Repo. Wenn sie fehlt, siehst du unten einen Hinweis.</p>
       <iframe id="menuFrame" src="speisekarte.pdf" title="Speisekarte"></iframe>
       <div id="menuFallback" class="note" style="display:none;">Speisekarte nicht gefunden (speisekarte.pdf).</div>
     </section>
@@ -92,7 +92,7 @@
         <p>Gib deinen Namen ein, um am Quiz teilzunehmen:</p>
         <div class="row" style="justify-content:center">
           <input type="text" id="username" placeholder="Dein Name" style="max-width:360px;" />
-          <button class="btn" onclick="startQuiz()">Quiz starten</button>
+          <button class="btn" id="quizStart">Quiz starten</button>
         </div>
       </div>
       <form id="quiz-form" style="display:none">
@@ -114,13 +114,13 @@
       <h2>💬 Hochzeitschat</h2>
       <div id="chat-login" class="row" style="justify-content:center; margin-bottom:12px;">
         <input type="text" id="chatName" placeholder="Dein Name" style="max-width:360px;" />
-        <button class="btn" onclick="joinChat()">Chat betreten</button>
+        <button class="btn" id="chatJoin">Chat betreten</button>
       </div>
       <div id="chatBox" style="display:none;">
         <div id="messages"></div>
         <div class="row" style="margin-top:10px;">
           <input type="text" id="messageInput" placeholder="Deine Nachricht" />
-          <button class="btn" onclick="sendMessage()">Senden</button>
+          <button class="btn" id="chatSend">Senden</button>
         </div>
       </div>
     </section>
@@ -143,7 +143,7 @@
         </div>
       </div>
       <div style="text-align:center; margin-top:10px;">
-        <button class="btn" onclick="submitAbout()">Absenden</button>
+        <button class="btn" id="aboutSend">Absenden</button>
       </div>
       <div style="margin-top:16px;">
         <h3 style="text-align:center">Eure Antworten (live)</h3>
@@ -152,22 +152,25 @@
     </section>
   </main>
 
-  <!-- Navigation & Fallbacks: bewusst in normalem Script, damit die Seite bedienbar bleibt -->
+  <!-- Navigation + PDF-Fallbacks (ohne Abhängigkeiten) -->
   <script>
-    function show(id, btn){
-      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-      document.getElementById(id).classList.add('active');
-      document.querySelectorAll('nav button').forEach(b => b.removeAttribute('aria-current'));
-      if(btn) btn.setAttribute('aria-current', 'page');
-    }
-    // PDF-Fallbacks
-    window.addEventListener('load', () => {
+    // Tabs/Navigation ohne globale show()-Abhängigkeit
+    document.addEventListener('DOMContentLoaded', () => {
+      const navButtons = document.querySelectorAll('nav button');
+      function activate(id, btn) {
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        navButtons.forEach(b => b.removeAttribute('aria-current'));
+        if (btn) btn.setAttribute('aria-current','page');
+      }
+      navButtons.forEach(btn => {
+        btn.addEventListener('click', () => activate(btn.dataset.target, btn));
+      });
+      // PDF-Fallback-Hinweise
       const mf = document.getElementById('menuFrame');
       const sf = document.getElementById('speechFrame');
-      if (mf) mf.addEventListener('error', () => document.getElementById('menuFallback').style.display='block');
-      if (sf) sf.addEventListener('error', () => document.getElementById('speechFallback').style.display='block');
-      // Safari lädt PDF-iframe-Fehler nicht immer als 'error' – als Workaround nach 1s prüfen:
-      setTimeout(()=>{
+      setTimeout(() => {
+        // Wenn das PDF nicht geladen wurde, zeigt Safari/Chrome kein contentDocument
         if (mf && mf.contentDocument === null) document.getElementById('menuFallback').style.display='block';
         if (sf && sf.contentDocument === null) document.getElementById('speechFallback').style.display='block';
       }, 1200);
@@ -176,11 +179,26 @@
 
   <!-- App-Logik & Firebase (modular) -->
   <script type="module">
-    // === Firebase ES Modules (nutze eine aktuelle 10.x-Version) ===
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+    // Firebase ES Modules – stabile 9.23.0 (modular, kein compat)
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
-    // === Quizfragen (deine 10) ===
+    // --- Firebase-Konfiguration ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyDEYeCmTkVGf4pTLCS-s3fV9jo1ivVPMj8",
+      authDomain: "hochzeitschat.firebaseapp.com",
+      databaseURL: "https://hochzeitschat-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "hochzeitschat",
+      storageBucket: "hochzeitschat.appspot.com",
+      messagingSenderId: "180005609648",
+      appId: "1:180005609648:web:f8c8cd278a1e3830501b75"
+    };
+
+    // App initialisieren
+    const app = initializeApp(firebaseConfig);
+    const db  = getDatabase(app);
+
+    // --- Quizfragen (deine 10) ---
     const questions = [
       { q:'Welches Haushaltsgerät wird von Lea täglich genutzt und treibt Nils in den Wahnsinn?', a:['Trockner','Staubsauger','Wasserkocher'], correct:'Staubsauger' },
       { q:'Wann sind Lea und Nils zusammengekommen?', a:['08.03.2017','18.03.2018','28.03.2017'], correct:'28.03.2017' },
@@ -194,30 +212,30 @@
       { q:'Wer hat zuhause die Hosen an?', a:['Lea','Nils','Beide'], correct:'Beide' },
     ];
 
-    // === Firebase-Konfig (Bucket auf appspot.com) ===
-    const firebaseConfig = {
-      apiKey: "AIzaSyDEYeCmTkVGf4pTLCS-s3fV9jo1ivVPMj8",
-      authDomain: "hochzeitschat.firebaseapp.com",
-      databaseURL: "https://hochzeitschat-default-rtdb.europe-west1.firebasedatabase.app",
-      projectId: "hochzeitschat",
-      storageBucket: "hochzeitschat.appspot.com",
-      messagingSenderId: "180005609648",
-      appId: "1:180005609648:web:f8c8cd278a1e3830501b75"
-    };
+    // --- Navigation in JS (IDs) ---
+    const quizStartBtn = document.getElementById('quizStart');
+    const quizForm     = document.getElementById('quiz-form');
+    const questionsEl  = document.getElementById('questions');
+    const resultEl     = document.getElementById('result');
+    const scoreboardEl = document.getElementById('scoreboard');
 
-    // Init
-    const app = initializeApp(firebaseConfig);
-    const db  = getDatabase(app);
+    const chatJoinBtn  = document.getElementById('chatJoin');
+    const chatSendBtn  = document.getElementById('chatSend');
+    const chatLogin    = document.getElementById('chat-login');
+    const chatBox      = document.getElementById('chatBox');
+    const messagesEl   = document.getElementById('messages');
 
-    // === QUIZ ===
+    const aboutSendBtn = document.getElementById('aboutSend');
+    const aboutList    = document.getElementById('aboutList');
+
+    // --- QUIZ ---
     let quizUser = "";
-    window.startQuiz = () => {
+    function startQuiz(){
       const name = (document.getElementById('username')?.value || "").trim();
       if (!name) return alert("Bitte gib einen Namen ein.");
       quizUser = name;
 
-      const container = document.getElementById('questions');
-      container.innerHTML = "";
+      questionsEl.innerHTML = "";
       questions.forEach((q,i) => {
         const div = document.createElement('div');
         div.className = 'question';
@@ -227,55 +245,56 @@
         answers.className = 'answers';
         answers.innerHTML = opts;
         div.appendChild(answers);
-        container.appendChild(div);
+        questionsEl.appendChild(div);
       });
 
       document.getElementById('quiz-login').style.display = 'none';
-      document.getElementById('quiz-form').style.display = 'block';
-    };
+      quizForm.style.display = 'block';
+    }
 
-    document.getElementById('quiz-form')?.addEventListener('submit', (e) => {
+    quizStartBtn.addEventListener('click', startQuiz);
+
+    quizForm.addEventListener('submit', (e) => {
       e.preventDefault();
-      const data = new FormData(e.target);
+      const data = new FormData(quizForm);
       let score = 0;
       questions.forEach((q,i) => { if (data.get(`q${i}`) === q.correct) score++; });
-
+      // speichern
       push(ref(db, 'scores'), { name: quizUser, score, total: questions.length, ts: Date.now() });
-
-      e.target.style.display = 'none';
-      const res = document.getElementById('result');
-      res.style.display = 'block';
-      res.textContent = `${quizUser}, du hast ${score} von ${questions.length} Punkten erreicht!`;
+      // anzeigen
+      quizForm.style.display = 'none';
+      resultEl.style.display = 'block';
+      resultEl.textContent = `${quizUser}, du hast ${score} von ${questions.length} Punkten erreicht!`;
     });
 
-    const sbEl = document.getElementById('scoreboard');
+    // Rangliste live
     const scores = [];
     onChildAdded(ref(db, 'scores'), (snap) => {
       const v = snap.val();
       scores.push(v);
       const sorted = [...scores].sort((a,b) => b.score - a.score || a.ts - b.ts);
-      sbEl.innerHTML = sorted.map((s,i)=>`<li><span>${i+1}. ${s.name}</span><strong>${s.score}/${s.total}</strong></li>`).join('');
+      scoreboardEl.innerHTML = sorted.map((s,i)=>`<li><span>${i+1}. ${s.name}</span><strong>${s.score}/${s.total}</strong></li>`).join('');
     });
 
-    // === CHAT ===
+    // --- CHAT ---
     let chatUser = "";
-    window.joinChat = () => {
+    function joinChat(){
       const n = (document.getElementById('chatName')?.value || "").trim();
       if (!n) return alert("Bitte gib einen Namen ein.");
       chatUser = n;
-      document.getElementById('chat-login').style.display = 'none';
-      document.getElementById('chatBox').style.display = 'block';
-    };
-
-    window.sendMessage = () => {
+      chatLogin.style.display = 'none';
+      chatBox.style.display = 'block';
+    }
+    function sendMessage(){
       const inp = document.getElementById('messageInput');
       const msg = (inp?.value || "").trim();
       if (!msg || !chatUser) return;
       push(ref(db, 'messages'), { name: chatUser, message: msg, ts: Date.now() });
       inp.value = "";
-    };
+    }
+    chatJoinBtn.addEventListener('click', joinChat);
+    chatSendBtn.addEventListener('click', sendMessage);
 
-    const messagesEl = document.getElementById('messages');
     onChildAdded(ref(db, 'messages'), (snap) => {
       const m = snap.val();
       const time = new Date(m.ts).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
@@ -286,8 +305,8 @@
       messagesEl.scrollTop = messagesEl.scrollHeight;
     });
 
-    // === ÜBER UNS ===
-    window.submitAbout = () => {
+    // --- ÜBER UNS ---
+    function submitAbout(){
       const lea  = (document.getElementById('aboutLea')?.value || "").trim();
       const nils = (document.getElementById('aboutNils')?.value || "").trim();
       const from = (document.getElementById('aboutName')?.value || "").trim();
@@ -297,9 +316,9 @@
       const l = document.getElementById('aboutLea');  if (l) l.value = "";
       const n = document.getElementById('aboutNils'); if (n) n.value = "";
       const f = document.getElementById('aboutName'); if (f) f.value = "";
-    };
+    }
+    document.getElementById('aboutSend').addEventListener('click', submitAbout);
 
-    const aboutList = document.getElementById('aboutList');
     onChildAdded(ref(db, 'about'), (snap) => {
       const v = snap.val();
       const card = document.createElement('div');
