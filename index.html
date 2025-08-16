@@ -153,9 +153,7 @@
   <script type="module">
     /* ===== Firebase ES Modules ===== */
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.24.0/firebase-app.js";
-    import {
-      getDatabase, ref, push, onChildAdded
-    } from "https://www.gstatic.com/firebasejs/9.24.0/firebase-database.js";
+    import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/9.24.0/firebase-database.js";
 
     /* ===== Navigation ===== */
     window.show = (id, btn) => {
@@ -167,19 +165,19 @@
 
     /* ===== Quiz-Daten (deine 10 Fragen) ===== */
     const questions = [
-      { q: 'Welches Haushaltsgerät wird von Lea täglich genutzt und treibt Nils in den Wahnsinn?', a:['Trockner','Staubsauger','Wasserkocher'], correct:'Staubsauger' },
-      { q: 'Wann sind Lea und Nils zusammengekommen?', a:['08.03.2017','18.03.2018','28.03.2017'], correct:'28.03.2017' },
-      { q: 'Wer von deren Freunden war beim ersten Date anwesend?', a:['Theresa','Lea-Stutzinger','Markus'], correct:'Theresa' },
-      { q: 'Welche Handgeste hat Lea ihrem Schwiegervater beim ersten Kennenlernen zur Begrüßung gezeigt?', a:['Peacezeichen','Gewinkt','High 5'], correct:'Peacezeichen' },
-      { q: 'Was war Nils schlimmstes Verbrechen bei seinen Schwiegereltern?', a:['nichtabgespült nach langer Toilettensitzung','aus dem Dachfenster übergeben','Ollis Schraubschlüssel geliehen und nie wiedergegeben'], correct:'aus dem Dachfenster übergeben' },
-      { q: 'Welche Krankheit schreibt Lea Nils zu?', a:['Autismus','Achs','Zwangsstörung'], correct:'Autismus' },
-      { q: 'Zu was wird Lea wenn sie schlecht gelaunt ist?', a:['dem unglaublichen Hulk','Giftzwerg','Fruchtzwerg'], correct:'Giftzwerg' },
-      { q: 'Wie lautet Nils legendärer durch seine Mutter vergebener Spitzname?', a:['bübchen','mamabärchen','püppelmann'], correct:'püppelmann' },
-      { q: 'Was ist Nils und Leas Einrichtungssteal?', a:['Antik','modern','Eklektizismus'], correct:'Eklektizismus' },
-      { q: 'Wer hat zuhause die Hosen an?', a:['Lea','Nils','Beide'], correct:'Beide' },
+      { q:'Welches Haushaltsgerät wird von Lea täglich genutzt und treibt Nils in den Wahnsinn?', a:['Trockner','Staubsauger','Wasserkocher'], correct:'Staubsauger' },
+      { q:'Wann sind Lea und Nils zusammengekommen?', a:['08.03.2017','18.03.2018','28.03.2017'], correct:'28.03.2017' },
+      { q:'Wer von deren Freunden war beim ersten Date anwesend?', a:['Theresa','Lea-Stutzinger','Markus'], correct:'Theresa' },
+      { q:'Welche Handgeste hat Lea ihrem Schwiegervater beim ersten Kennenlernen zur Begrüßung gezeigt?', a:['Peacezeichen','Gewinkt','High 5'], correct:'Peacezeichen' },
+      { q:'Was war Nils schlimmstes Verbrechen bei seinen Schwiegereltern?', a:['nichtabgespült nach langer Toilettensitzung','aus dem Dachfenster übergeben','Ollis Schraubschlüssel geliehen und nie wiedergegeben'], correct:'aus dem Dachfenster übergeben' },
+      { q:'Welche Krankheit schreibt Lea Nils zu?', a:['Autismus','Achs','Zwangsstörung'], correct:'Autismus' },
+      { q:'Zu was wird Lea wenn sie schlecht gelaunt ist?', a:['dem unglaublichen Hulk','Giftzwerg','Fruchtzwerg'], correct:'Giftzwerg' },
+      { q:'Wie lautet Nils legendärer durch seine Mutter vergebener Spitzname?', a:['bübchen','mamabärchen','püppelmann'], correct:'püppelmann' },
+      { q:'Was ist Nils und Leas Einrichtungssteal?', a:['Antik','modern','Eklektizismus'], correct:'Eklektizismus' },
+      { q:'Wer hat zuhause die Hosen an?', a:['Lea','Nils','Beide'], correct:'Beide' },
     ];
 
-    /* ===== Firebase-Konfig (korrigierter storageBucket) ===== */
+    /* ===== Firebase-Konfiguration (korrigierter storageBucket) ===== */
     const firebaseConfig = {
       apiKey: "AIzaSyDEYeCmTkVGf4pTLCS-s3fV9jo1ivVPMj8",
       authDomain: "hochzeitschat.firebaseapp.com",
@@ -190,21 +188,13 @@
       appId: "1:180005609648:web:f8c8cd278a1e3830501b75"
     };
 
-    let db;
-    try {
-      const app = initializeApp(firebaseConfig);
-      db = getDatabase(app);
-      console.log("Firebase initialisiert.");
-    } catch (e) {
-      console.error("Firebase-Init fehlgeschlagen:", e);
-      // UI funktioniert trotzdem (Buttons etc.), aber ohne Live-Speicherung
-    }
+    const app = initializeApp(firebaseConfig);
+    const db  = getDatabase(app);
 
     /* ===== QUIZ ===== */
     let quizUser = "";
     window.startQuiz = () => {
-      const nameEl = document.getElementById('username');
-      const name = (nameEl?.value || "").trim();
+      const name = (document.getElementById('username')?.value || "").trim();
       if (!name) return alert("Bitte gib einen Namen ein.");
       quizUser = name;
 
@@ -226,46 +216,33 @@
       document.getElementById('quiz-form').style.display = 'block';
     };
 
-    const quizForm = document.getElementById('quiz-form');
-    if (quizForm) {
-      quizForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const data = new FormData(quizForm);
-        let score = 0;
-        questions.forEach((q,i) => {
-          if (data.get(`q${i}`) === q.correct) score++;
-        });
+    document.getElementById('quiz-form')?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const data = new FormData(e.target);
+      let score = 0;
+      questions.forEach((q,i) => { if (data.get(`q${i}`) === q.correct) score++; });
 
-        // In DB speichern (falls verfügbar)
-        try {
-          if (db) push(ref(db, 'scores'), { name: quizUser, score, total: questions.length, ts: Date.now() });
-        } catch (err) {
-          console.warn("Score konnte nicht gespeichert werden:", err);
-        }
+      push(ref(db, 'scores'), { name: quizUser, score, total: questions.length, ts: Date.now() });
 
-        quizForm.style.display = 'none';
-        const res = document.getElementById('result');
-        res.style.display = 'block';
-        res.textContent = `${quizUser}, du hast ${score} von ${questions.length} Punkten erreicht!`;
-      });
-    }
+      e.target.style.display = 'none';
+      const res = document.getElementById('result');
+      res.style.display = 'block';
+      res.textContent = `${quizUser}, du hast ${score} von ${questions.length} Punkten erreicht!`;
+    });
 
-    // Rangliste live laden
     const sbEl = document.getElementById('scoreboard');
     const scores = [];
-    if (db && sbEl) {
-      onChildAdded(ref(db, 'scores'), (snap) => {
-        scores.push(snap.val());
-        const sorted = [...scores].sort((a,b) => b.score - a.score || a.ts - b.ts);
-        sbEl.innerHTML = sorted.map((s,i) => `<li><span>${i+1}. ${s.name}</span><strong>${s.score}/${s.total}</strong></li>`).join('');
-      });
-    }
+    onChildAdded(ref(db, 'scores'), (snap) => {
+      const v = snap.val();
+      scores.push(v);
+      const sorted = [...scores].sort((a,b) => b.score - a.score || a.ts - b.ts);
+      sbEl.innerHTML = sorted.map((s,i)=>`<li><span>${i+1}. ${s.name}</span><strong>${s.score}/${s.total}</strong></li>`).join('');
+    });
 
     /* ===== CHAT ===== */
     let chatUser = "";
     window.joinChat = () => {
-      const input = document.getElementById('chatName');
-      const n = (input?.value || "").trim();
+      const n = (document.getElementById('chatName')?.value || "").trim();
       if (!n) return alert("Bitte gib einen Namen ein.");
       chatUser = n;
       document.getElementById('chat-login').style.display = 'none';
@@ -276,61 +253,46 @@
       const inp = document.getElementById('messageInput');
       const msg = (inp?.value || "").trim();
       if (!msg || !chatUser) return;
-      try {
-        if (db) push(ref(db, 'messages'), { name: chatUser, message: msg, ts: Date.now() });
-      } catch (err) {
-        console.warn("Nachricht konnte nicht gespeichert werden:", err);
-      }
+      push(ref(db, 'messages'), { name: chatUser, message: msg, ts: Date.now() });
       inp.value = "";
     };
 
     const messagesEl = document.getElementById('messages');
-    if (db && messagesEl) {
-      onChildAdded(ref(db, 'messages'), (snap) => {
-        const m = snap.val();
-        const time = new Date(m.ts).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-        const div = document.createElement('div');
-        div.className = 'msg';
-        div.innerHTML = `<div class="meta">[${time}] <strong>${m.name}</strong></div><div>${m.message}</div>`;
-        messagesEl.appendChild(div);
-        messagesEl.scrollTop = messagesEl.scrollHeight;
-      });
-    }
+    onChildAdded(ref(db, 'messages'), (snap) => {
+      const m = snap.val();
+      const time = new Date(m.ts).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+      const div = document.createElement('div');
+      div.className = 'msg';
+      div.innerHTML = `<div class="meta">[${time}] <strong>${m.name}</strong></div><div>${m.message}</div>`;
+      messagesEl.appendChild(div);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    });
 
     /* ===== ÜBER UNS ===== */
     window.submitAbout = () => {
-      const lea = (document.getElementById('aboutLea')?.value || "").trim();
+      const lea  = (document.getElementById('aboutLea')?.value || "").trim();
       const nils = (document.getElementById('aboutNils')?.value || "").trim();
       const from = (document.getElementById('aboutName')?.value || "").trim();
       if (!lea && !nils) return alert("Bitte schreibe etwas zu Lea oder Nils.");
-
-      try {
-        if (db) {
-          if (lea) push(ref(db, 'about'), { who:'Lea', text: lea, from, ts: Date.now() });
-          if (nils) push(ref(db, 'about'), { who:'Nils', text: nils, from, ts: Date.now() });
-        }
-      } catch (err) {
-        console.warn("Über-uns konnte nicht gespeichert werden:", err);
-      }
-
-      const l = document.getElementById('aboutLea'); if (l) l.value = "";
+      if (lea)  push(ref(db, 'about'), { who:'Lea',  text: lea,  from, ts: Date.now() });
+      if (nils) push(ref(db, 'about'), { who:'Nils', text: nils, from, ts: Date.now() });
+      const l = document.getElementById('aboutLea');  if (l) l.value = "";
       const n = document.getElementById('aboutNils'); if (n) n.value = "";
       const f = document.getElementById('aboutName'); if (f) f.value = "";
     };
 
     const aboutList = document.getElementById('aboutList');
-    if (db && aboutList) {
-      onChildAdded(ref(db, 'about'), (snap) => {
-        const v = snap.val();
-        const card = document.createElement('div');
-        card.className = 'question';
-        const from = v.from ? ` – <span class="muted">von ${v.from}</span>` : '';
-        card.innerHTML = `<strong>${v.who}</strong>${from}<div style="margin-top:6px;">${v.text}</div>`;
-        aboutList.appendChild(card);
-      });
-    }
+    onChildAdded(ref(db, 'about'), (snap) => {
+      const v = snap.val();
+      const card = document.createElement('div');
+      card.className = 'question';
+      const from = v.from ? ` – <span class="muted">von ${v.from}</span>` : '';
+      card.innerHTML = `<strong>${v.who}</strong>${from}<div style="margin-top:6px;">${v.text}</div>`;
+      aboutList.appendChild(card);
+    });
 
-    console.log("App-Skript geladen. Wenn etwas nicht reagiert: F12 → Konsole prüfen.");
+    console.log("App geladen. Falls etwas nicht reagiert: F12/Console checken.");
   </script>
 </body>
 </html>
+
