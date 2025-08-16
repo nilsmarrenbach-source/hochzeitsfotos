@@ -106,6 +106,9 @@
     input[type="text"], textarea {
       width:100%; padding:10px 12px; border:1px solid #e9dcd8; border-radius:10px; font:inherit; background:#fffdfc;
     }
+    img.hero {
+      max-width:100%; border-radius:20px; box-shadow:0 10px 28px rgba(0,0,0,.15);
+    }
   </style>
 </head>
 <body>
@@ -115,7 +118,8 @@
   </header>
 
   <nav aria-label="Hauptnavigation">
-    <button data-target="fotos" aria-current="page">📸 Fotos</button>
+    <button data-target="start" aria-current="page">🏠 Startseite</button>
+    <button data-target="fotos">📸 Fotos</button>
     <button data-target="speisekarte">🍽️ Speisekarte</button>
     <button data-target="rede">💬 Hochzeitsrede</button>
     <button data-target="quiz">❓ Quiz</button>
@@ -124,14 +128,23 @@
   </nav>
 
   <main>
+    <!-- Startseite -->
+    <section id="start" class="section active">
+      <h2>❤️ Willkommen</h2>
+      <p class="muted" style="text-align:center">Schön, dass ihr da seid – feiert mit uns diesen besonderen Tag!</p>
+      <div style="text-align:center; margin-top:20px;">
+        <img src="start.jpg" alt="Brautpaar" class="hero" />
+      </div>
+    </section>
+
     <!-- Fotos -->
-    <section id="fotos" class="section active">
+    <section id="fotos" class="section">
       <h2>📷 Fotos hochladen oder ansehen</h2>
       <p class="muted" style="text-align:center">Wählt eine Option:</p>
       <div class="grid2" style="text-align:center">
         <div>
           <h3>Hochladen</h3>
-          <p>Teile eure schönsten Momente mit uns!</p>
+          <p>Teilt eure schönsten Momente mit uns!</p>
           <a class="btn" target="_blank" href="https://www.dropbox.com/request/yq0IJGtF4kC2J1Cfqyg3">📥 Fotos hochladen</a>
         </div>
         <div>
@@ -444,5 +457,6 @@
   </script>
 </body>
 </html>
+
 
 
