@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Hochzeit – Menü, Fotos, Quiz & Chat</title>
+  <title>Hochzeit The Marrenbach's</title>
 
-  <!-- Schriften (verschnörkelt + edel) -->
+  <!-- Schriften -->
   <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Playfair+Display:wght@400;600&display=swap" rel="stylesheet">
 
   <style>
@@ -15,6 +15,9 @@
       --muted:#6a6a6a;
       --accent:#b74a3a; /* Rostrot */
       --accent-dark:#9d3f31;
+      --mine:#fff2ef;    /* eigene Nachricht */
+      --other:#ffffff;   /* fremde Nachricht */
+      --border:#f0e4e1;
     }
     * { box-sizing:border-box; }
     body {
@@ -24,11 +27,12 @@
       color:var(--fg);
       text-align:center;
     }
+
+    /* Header */
     header {
       background:linear-gradient(180deg, var(--accent), var(--accent-dark));
       color:#fff;
       padding:28px 16px 22px;
-      letter-spacing:.3px;
       position:relative;
       overflow:hidden;
     }
@@ -38,15 +42,8 @@
       font-size:36px;
       font-family:"Great Vibes", cursive;
     }
-    header .sub {
-      margin-top:6px;
-      font-family:"Playfair Display", serif;
-      font-weight:600;
-      font-size:14px;
-      letter-spacing:.12em;
-      opacity:.9;
-    }
 
+    /* Navigation */
     nav {
       display:flex; flex-wrap:wrap; gap:10px; justify-content:center; padding:16px;
     }
@@ -61,18 +58,20 @@
       box-shadow:0 6px 18px rgba(183,74,58,.25);
     }
 
+    /* Layout */
     main { max-width:1000px; margin:0 auto; padding:10px 16px 40px; }
     .section {
       display:none; text-align:left; background:#fff; padding:22px; border-radius:16px;
       box-shadow:0 6px 20px rgba(0,0,0,.06); margin-top:8px;
-      border:1px solid #f0e4e1;
+      border:1px solid var(--border);
     }
     .section.active { display:block; }
     h2 {
       margin-top:0; text-align:center; font-family:"Playfair Display", serif; font-weight:600;
-      color:var(--accent); letter-spacing:.02em;
+      color:var(--accent);
     }
     h3 { font-family:"Playfair Display", serif; }
+
     a.btn, .btn {
       display:inline-block; background:var(--accent); color:#fff; text-decoration:none;
       padding:10px 16px; border-radius:10px; margin:6px 6px 0; border:1px solid var(--accent-dark);
@@ -86,12 +85,14 @@
     .muted { color:var(--muted); font-size:.95rem; }
     .note { color:#9a8f8d; font-size:.9rem; text-align:center; }
 
+    /* Startbild */
+    img.hero { max-width:100%; border-radius:20px; box-shadow:0 10px 28px rgba(0,0,0,.15); }
+
     /* Quiz */
-    .question { padding:16px 16px; border:1px solid #f0e4e1; border-radius:12px; background:#fffdfc; }
+    .question { padding:16px 16px; border:1px solid var(--border); border-radius:12px; background:#fffdfc; }
     .answers label { display:block; margin:8px 0; padding:8px 10px; border:1px solid #f2e7e4; border-radius:10px; cursor:pointer; }
     .answers input { margin-right:8px; }
     #quiz-progress { font-family:"Playfair Display", serif; color:var(--muted); }
-
     ul#scoreboard { list-style:none; padding:0; margin:0; }
     ul#scoreboard li {
       padding:8px 10px; border-bottom:1px dashed #e5d6d2; display:flex; justify-content:space-between;
@@ -99,22 +100,29 @@
     }
 
     /* Chat */
-    #messages { height:340px; overflow:auto; border:1px solid #f0e4e1; border-radius:12px; padding:12px; background:#fffbfa; }
-    .msg { text-wrap: pretty; padding:6px 8px; margin:6px 0; border-radius:8px; background:#fff; border:1px solid #f2e7e4; }
-    .msg .meta { font-size:.8rem; color:#777; }
+    #chatHeader {
+      display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;
+    }
+    #messages {
+      height:340px; overflow:auto; border:1px solid var(--border); border-radius:12px; padding:12px; background:#fffbfa;
+    }
+    .msg-wrap { display:flex; margin:6px 0; }
+    .msg {
+      padding:8px 10px; border-radius:10px; max-width:70%; word-wrap:break-word;
+      border:1px solid #f2e7e4; background:var(--other); text-align:left;
+    }
+    .msg .meta { font-size:.8rem; color:#777; margin-bottom:4px; }
+    .mine-wrap { justify-content:flex-end; }
+    .mine { background:var(--mine); border-color:#f0d3cc; }
     .row { display:flex; gap:8px; align-items:center; }
     input[type="text"], textarea {
       width:100%; padding:10px 12px; border:1px solid #e9dcd8; border-radius:10px; font:inherit; background:#fffdfc;
-    }
-    img.hero {
-      max-width:100%; border-radius:20px; box-shadow:0 10px 28px rgba(0,0,0,.15);
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>Willkommen zur Hochzeit – The Marrenbach's</h1>
-    <div class="sub">Menü · Fotos · Quiz · Chat</div>
+    <h1>Willkommen zur Hochzeit The Marrenbach's</h1>
   </header>
 
   <nav aria-label="Hauptnavigation">
@@ -209,10 +217,17 @@
     <!-- Chat -->
     <section id="chat" class="section">
       <h2>💬 Hochzeitschat</h2>
+
+      <div id="chatHeader">
+        <div class="muted" id="chatStatus"></div>
+        <div class="muted" id="chatUserBadge"></div>
+      </div>
+
       <div id="chat-login" class="row" style="justify-content:center; margin-bottom:12px;">
         <input type="text" id="chatName" placeholder="Dein Name" style="max-width:360px;" />
         <button class="btn" id="chatJoin">Chat betreten</button>
       </div>
+
       <div id="chatBox" style="display:none;">
         <div id="messages"></div>
         <div class="row" style="margin-top:10px;">
@@ -397,17 +412,35 @@
     /* === Chat === */
     const chatJoinBtn  = document.getElementById('chatJoin');
     const chatSendBtn  = document.getElementById('chatSend');
-    const chatLogin    = document.getElementById('chat-login');
+    const chatLoginBox = document.getElementById('chat-login');
     const chatBox      = document.getElementById('chatBox');
     const messagesEl   = document.getElementById('messages');
-
+    const chatStatus   = document.getElementById('chatStatus');
+    const chatUserBadge= document.getElementById('chatUserBadge');
     let chatUser = "";
+
+    // beim Laden: gespeicherten Namen nutzen (nicht änderbar)
+    const saved = localStorage.getItem('chatName');
+    if (saved && saved.trim() !== "") {
+      chatUser = saved.trim();
+      chatLoginBox.style.display = 'none';
+      chatBox.style.display = 'block';
+      chatUserBadge.textContent = `🔒 Eingeloggt als: ${chatUser}`;
+      chatStatus.textContent = "Verbunden";
+    } else {
+      chatStatus.textContent = "Bitte Namen eingeben, um den Chat zu nutzen.";
+    }
+
     function joinChat(){
+      if (chatUser) return; // bereits gesetzt
       const n = (document.getElementById('chatName')?.value || "").trim();
       if (!n) return alert("Bitte gib einen Namen ein.");
       chatUser = n;
-      chatLogin.style.display = 'none';
+      localStorage.setItem('chatName', chatUser); // fest speichern
+      chatLoginBox.style.display = 'none';
       chatBox.style.display = 'block';
+      chatUserBadge.textContent = `🔒 Eingeloggt als: ${chatUser}`;
+      chatStatus.textContent = "Verbunden";
     }
     function sendMessage(){
       const inp = document.getElementById('messageInput');
@@ -421,11 +454,18 @@
 
     onChildAdded(ref(db, 'messages'), (snap) => {
       const m = snap.val();
+      const mine = (chatUser && m.name === chatUser);
       const time = new Date(m.ts).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-      const div = document.createElement('div');
-      div.className = 'msg';
-      div.innerHTML = `<div class="meta">[${time}] <strong>${m.name}</strong></div><div>${m.message}</div>`;
-      messagesEl.appendChild(div);
+
+      const wrap = document.createElement('div');
+      wrap.className = mine ? 'msg-wrap mine-wrap' : 'msg-wrap';
+
+      const bubble = document.createElement('div');
+      bubble.className = mine ? 'msg mine' : 'msg';
+      bubble.innerHTML = `<div class="meta">[${time}] <strong>${m.name}</strong></div><div>${m.message}</div>`;
+
+      wrap.appendChild(bubble);
+      messagesEl.appendChild(wrap);
       messagesEl.scrollTop = messagesEl.scrollHeight;
     });
 
@@ -457,6 +497,4 @@
   </script>
 </body>
 </html>
-
-
 
