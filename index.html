@@ -33,6 +33,7 @@
     .msg .meta { font-size:.8rem; color:#777; }
     .row { display:flex; gap:8px; align-items:center; }
     input[type="text"], textarea { width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:10px; font:inherit; }
+    .note { color:#999; font-size:.9rem; text-align:center; }
   </style>
 </head>
 <body>
@@ -71,15 +72,17 @@
     <!-- Speisekarte -->
     <section id="speisekarte" class="section">
       <h2>🍽️ Speisekarte</h2>
-      <p class="muted" style="text-align:center">Legt eure PDF als <code>speisekarte.pdf</code> in den Ordner.</p>
-      <iframe src="speisekarte.pdf" title="Speisekarte"></iframe>
+      <p class="note">Lege eine Datei <code>speisekarte.pdf</code> in dein Repo. Falls sie fehlt, erscheint unten eine Notiz.</p>
+      <iframe id="menuFrame" src="speisekarte.pdf" title="Speisekarte"></iframe>
+      <div id="menuFallback" class="note" style="display:none;">Speisekarte nicht gefunden (speisekarte.pdf).</div>
     </section>
 
     <!-- Rede -->
     <section id="rede" class="section">
       <h2>💬 Hochzeitsrede</h2>
-      <p class="muted" style="text-align:center">Legt eure PDF als <code>hochzeitsrede.pdf</code> in den Ordner.</p>
-      <iframe src="hochzeitsrede.pdf" title="Hochzeitsrede"></iframe>
+      <p class="note">Lege eine Datei <code>hochzeitsrede.pdf</code> in dein Repo.</p>
+      <iframe id="speechFrame" src="hochzeitsrede.pdf" title="Hochzeitsrede"></iframe>
+      <div id="speechFallback" class="note" style="display:none;">Hochzeitsrede nicht gefunden (hochzeitsrede.pdf).</div>
     </section>
 
     <!-- Quiz -->
@@ -122,7 +125,7 @@
       </div>
     </section>
 
-    <!-- Über uns: offene Antworten -->
+    <!-- Über uns -->
     <section id="gaesteantworten" class="section">
       <h2>📝 Über uns</h2>
       <p class="muted">Schreib eine kurze Zeile – was macht <strong>Lea</strong> und was macht <strong>Nils</strong> aus?</p>
@@ -149,21 +152,35 @@
     </section>
   </main>
 
-  <!-- Firebase (modular) & App-Logik -->
-  <script type="module">
-    /* ===== Firebase ES Modules ===== */
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.24.0/firebase-app.js";
-    import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/9.24.0/firebase-database.js";
-
-    /* ===== Navigation ===== */
-    window.show = (id, btn) => {
+  <!-- Navigation & Fallbacks: bewusst in normalem Script, damit die Seite bedienbar bleibt -->
+  <script>
+    function show(id, btn){
       document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
       document.getElementById(id).classList.add('active');
       document.querySelectorAll('nav button').forEach(b => b.removeAttribute('aria-current'));
-      if (btn) btn.setAttribute('aria-current', 'page');
-    };
+      if(btn) btn.setAttribute('aria-current', 'page');
+    }
+    // PDF-Fallbacks
+    window.addEventListener('load', () => {
+      const mf = document.getElementById('menuFrame');
+      const sf = document.getElementById('speechFrame');
+      if (mf) mf.addEventListener('error', () => document.getElementById('menuFallback').style.display='block');
+      if (sf) sf.addEventListener('error', () => document.getElementById('speechFallback').style.display='block');
+      // Safari lädt PDF-iframe-Fehler nicht immer als 'error' – als Workaround nach 1s prüfen:
+      setTimeout(()=>{
+        if (mf && mf.contentDocument === null) document.getElementById('menuFallback').style.display='block';
+        if (sf && sf.contentDocument === null) document.getElementById('speechFallback').style.display='block';
+      }, 1200);
+    });
+  </script>
 
-    /* ===== Quiz-Daten (deine 10 Fragen) ===== */
+  <!-- App-Logik & Firebase (modular) -->
+  <script type="module">
+    // === Firebase ES Modules (nutze eine aktuelle 10.x-Version) ===
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+    // === Quizfragen (deine 10) ===
     const questions = [
       { q:'Welches Haushaltsgerät wird von Lea täglich genutzt und treibt Nils in den Wahnsinn?', a:['Trockner','Staubsauger','Wasserkocher'], correct:'Staubsauger' },
       { q:'Wann sind Lea und Nils zusammengekommen?', a:['08.03.2017','18.03.2018','28.03.2017'], correct:'28.03.2017' },
@@ -177,21 +194,22 @@
       { q:'Wer hat zuhause die Hosen an?', a:['Lea','Nils','Beide'], correct:'Beide' },
     ];
 
-    /* ===== Firebase-Konfiguration (korrigierter storageBucket) ===== */
+    // === Firebase-Konfig (Bucket auf appspot.com) ===
     const firebaseConfig = {
       apiKey: "AIzaSyDEYeCmTkVGf4pTLCS-s3fV9jo1ivVPMj8",
       authDomain: "hochzeitschat.firebaseapp.com",
       databaseURL: "https://hochzeitschat-default-rtdb.europe-west1.firebasedatabase.app",
       projectId: "hochzeitschat",
-      storageBucket: "hochzeitschat.appspot.com",        // wichtig
+      storageBucket: "hochzeitschat.appspot.com",
       messagingSenderId: "180005609648",
       appId: "1:180005609648:web:f8c8cd278a1e3830501b75"
     };
 
+    // Init
     const app = initializeApp(firebaseConfig);
     const db  = getDatabase(app);
 
-    /* ===== QUIZ ===== */
+    // === QUIZ ===
     let quizUser = "";
     window.startQuiz = () => {
       const name = (document.getElementById('username')?.value || "").trim();
@@ -239,7 +257,7 @@
       sbEl.innerHTML = sorted.map((s,i)=>`<li><span>${i+1}. ${s.name}</span><strong>${s.score}/${s.total}</strong></li>`).join('');
     });
 
-    /* ===== CHAT ===== */
+    // === CHAT ===
     let chatUser = "";
     window.joinChat = () => {
       const n = (document.getElementById('chatName')?.value || "").trim();
@@ -268,7 +286,7 @@
       messagesEl.scrollTop = messagesEl.scrollHeight;
     });
 
-    /* ===== ÜBER UNS ===== */
+    // === ÜBER UNS ===
     window.submitAbout = () => {
       const lea  = (document.getElementById('aboutLea')?.value || "").trim();
       const nils = (document.getElementById('aboutNils')?.value || "").trim();
@@ -290,8 +308,6 @@
       card.innerHTML = `<strong>${v.who}</strong>${from}<div style="margin-top:6px;">${v.text}</div>`;
       aboutList.appendChild(card);
     });
-
-    console.log("App geladen. Falls etwas nicht reagiert: F12/Console checken.");
   </script>
 </body>
 </html>
