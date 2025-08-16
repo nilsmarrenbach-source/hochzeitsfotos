@@ -4,41 +4,114 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Hochzeit – Menü, Fotos, Quiz & Chat</title>
+
+  <!-- Schriften (verschnörkelt + edel) -->
+  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Playfair+Display:wght@400;600&display=swap" rel="stylesheet">
+
   <style>
-    :root { --bg:#f8f8f8; --fg:#111; --muted:#666; --accent:#000; }
+    :root {
+      --bg:#f8f6f4;
+      --fg:#1a1a1a;
+      --muted:#6a6a6a;
+      --accent:#b74a3a; /* Rostrot */
+      --accent-dark:#9d3f31;
+    }
     * { box-sizing:border-box; }
-    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", sans-serif; background:var(--bg); color:var(--fg); text-align:center; }
-    header { background:var(--accent); color:#fff; padding:22px 16px; letter-spacing:.3px; }
-    header h1 { margin:0; font-weight:700; font-size:24px; }
-    nav { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; padding:16px; }
-    nav button { appearance:none; border:none; background:var(--accent); color:#fff; padding:10px 16px; border-radius:10px; cursor:pointer; font-weight:600; }
-    nav button[aria-current="page"] { outline:2px solid #000; outline-offset:2px; }
+    body {
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+      background:var(--bg);
+      color:var(--fg);
+      text-align:center;
+    }
+    header {
+      background:linear-gradient(180deg, var(--accent), var(--accent-dark));
+      color:#fff;
+      padding:28px 16px 22px;
+      letter-spacing:.3px;
+      position:relative;
+      overflow:hidden;
+    }
+    header h1 {
+      margin:0;
+      font-weight:400;
+      font-size:36px;
+      font-family:"Great Vibes", cursive;
+    }
+    header .sub {
+      margin-top:6px;
+      font-family:"Playfair Display", serif;
+      font-weight:600;
+      font-size:14px;
+      letter-spacing:.12em;
+      opacity:.9;
+    }
+
+    nav {
+      display:flex; flex-wrap:wrap; gap:10px; justify-content:center; padding:16px;
+    }
+    nav button {
+      appearance:none; border:1px solid #e8d9d5; background:#fff; color:var(--accent);
+      padding:10px 16px; border-radius:999px; cursor:pointer; font-weight:600;
+      box-shadow:0 4px 14px rgba(183,74,58,.08);
+    }
+    nav button:hover { border-color:#e1c8c2; transform:translateY(-1px); }
+    nav button[aria-current="page"] {
+      background:var(--accent); color:#fff; border-color:var(--accent);
+      box-shadow:0 6px 18px rgba(183,74,58,.25);
+    }
+
     main { max-width:1000px; margin:0 auto; padding:10px 16px 40px; }
-    .section { display:none; text-align:left; background:#fff; padding:22px; border-radius:16px; box-shadow:0 6px 20px rgba(0,0,0,.06); margin-top:8px; }
+    .section {
+      display:none; text-align:left; background:#fff; padding:22px; border-radius:16px;
+      box-shadow:0 6px 20px rgba(0,0,0,.06); margin-top:8px;
+      border:1px solid #f0e4e1;
+    }
     .section.active { display:block; }
-    h2 { margin-top:0; text-align:center; }
-    a.btn, .btn { display:inline-block; background:#000; color:#fff; text-decoration:none; padding:10px 16px; border-radius:10px; margin:6px 6px 0; }
+    h2 {
+      margin-top:0; text-align:center; font-family:"Playfair Display", serif; font-weight:600;
+      color:var(--accent); letter-spacing:.02em;
+    }
+    h3 { font-family:"Playfair Display", serif; }
+    a.btn, .btn {
+      display:inline-block; background:var(--accent); color:#fff; text-decoration:none;
+      padding:10px 16px; border-radius:10px; margin:6px 6px 0; border:1px solid var(--accent-dark);
+      box-shadow:0 6px 16px rgba(183,74,58,.25); cursor:pointer;
+    }
+    a.btn:hover, .btn:hover { filter:brightness(0.98); transform:translateY(-1px); }
     .grid2 { display:grid; grid-template-columns:1fr; gap:18px; }
     @media (min-width:700px){ .grid2 { grid-template-columns:1fr 1fr; } }
     iframe { width:100%; height:70vh; border:none; background:#f1f1f1; border-radius:12px; }
-    /* Quiz */
-    .question { padding:12px 14px; border:1px solid #e7e7e7; border-radius:10px; margin-bottom:12px; }
-    .answers label { display:block; margin:6px 0; }
+
     .muted { color:var(--muted); font-size:.95rem; }
+    .note { color:#9a8f8d; font-size:.9rem; text-align:center; }
+
+    /* Quiz */
+    .question { padding:16px 16px; border:1px solid #f0e4e1; border-radius:12px; background:#fffdfc; }
+    .answers label { display:block; margin:8px 0; padding:8px 10px; border:1px solid #f2e7e4; border-radius:10px; cursor:pointer; }
+    .answers input { margin-right:8px; }
+    #quiz-progress { font-family:"Playfair Display", serif; color:var(--muted); }
+
     ul#scoreboard { list-style:none; padding:0; margin:0; }
-    ul#scoreboard li { padding:8px 10px; border-bottom:1px dashed #e5e5e5; display:flex; justify-content:space-between; }
+    ul#scoreboard li {
+      padding:8px 10px; border-bottom:1px dashed #e5d6d2; display:flex; justify-content:space-between;
+      font-family:"Playfair Display", serif;
+    }
+
     /* Chat */
-    #messages { height:340px; overflow:auto; border:1px solid #e7e7e7; border-radius:12px; padding:12px; background:#fafafa; }
-    .msg { text-wrap: pretty; padding:6px 8px; margin:6px 0; border-radius:8px; background:#fff; border:1px solid #efefef; }
+    #messages { height:340px; overflow:auto; border:1px solid #f0e4e1; border-radius:12px; padding:12px; background:#fffbfa; }
+    .msg { text-wrap: pretty; padding:6px 8px; margin:6px 0; border-radius:8px; background:#fff; border:1px solid #f2e7e4; }
     .msg .meta { font-size:.8rem; color:#777; }
     .row { display:flex; gap:8px; align-items:center; }
-    input[type="text"], textarea { width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:10px; font:inherit; }
-    .note { color:#999; font-size:.9rem; text-align:center; }
+    input[type="text"], textarea {
+      width:100%; padding:10px 12px; border:1px solid #e9dcd8; border-radius:10px; font:inherit; background:#fffdfc;
+    }
   </style>
 </head>
 <body>
   <header>
-    <h1>Willkommen zur Hochzeit – Menü, Fotos, Quiz & Chat</h1>
+    <h1>Willkommen zur Hochzeit – The Marrenbach's</h1>
+    <div class="sub">Menü · Fotos · Quiz · Chat</div>
   </header>
 
   <nav aria-label="Hauptnavigation">
@@ -85,9 +158,11 @@
       <div id="speechFallback" class="note" style="display:none;">Hochzeitsrede nicht gefunden (hochzeitsrede.pdf).</div>
     </section>
 
-    <!-- Quiz -->
+    <!-- Quiz (Einzelfragen-Modus) -->
     <section id="quiz" class="section">
       <h2>❓ Hochzeitsquiz</h2>
+
+      <!-- Login -->
       <div id="quiz-login">
         <p>Gib deinen Namen ein, um am Quiz teilzunehmen:</p>
         <div class="row" style="justify-content:center">
@@ -95,15 +170,24 @@
           <button class="btn" id="quizStart">Quiz starten</button>
         </div>
       </div>
-      <form id="quiz-form" style="display:none">
-        <div id="questions"></div>
-        <div style="text-align:center; margin-top:12px">
-          <button class="btn" type="submit">Antworten absenden</button>
+
+      <!-- Einzelfrage -->
+      <div id="quiz-run" style="display:none">
+        <div style="text-align:center; margin-bottom:8px;" class="muted">
+          <span id="quiz-progress">Frage 1/10</span>
         </div>
-      </form>
+        <div id="quiz-question" class="question"></div>
+        <div id="quiz-answers" class="answers" style="margin-top:8px;"></div>
+        <div style="text-align:center; margin-top:14px;">
+          <button class="btn" id="quizNext" disabled>Weiter</button>
+        </div>
+      </div>
+
+      <!-- Ergebnis -->
       <div id="result" style="display:none; text-align:center; font-weight:600; margin-top:14px"></div>
 
-      <div class="scoreboard">
+      <!-- Rangliste -->
+      <div class="scoreboard" style="margin-top:18px;">
         <h3 style="text-align:center">🏆 Rangliste</h3>
         <ul id="scoreboard"></ul>
       </div>
@@ -152,9 +236,8 @@
     </section>
   </main>
 
-  <!-- Navigation + PDF-Fallbacks (ohne Abhängigkeiten) -->
+  <!-- Navigation + PDF-Fallbacks -->
   <script>
-    // Tabs/Navigation ohne globale show()-Abhängigkeit
     document.addEventListener('DOMContentLoaded', () => {
       const navButtons = document.querySelectorAll('nav button');
       function activate(id, btn) {
@@ -166,11 +249,11 @@
       navButtons.forEach(btn => {
         btn.addEventListener('click', () => activate(btn.dataset.target, btn));
       });
+
       // PDF-Fallback-Hinweise
       const mf = document.getElementById('menuFrame');
       const sf = document.getElementById('speechFrame');
       setTimeout(() => {
-        // Wenn das PDF nicht geladen wurde, zeigt Safari/Chrome kein contentDocument
         if (mf && mf.contentDocument === null) document.getElementById('menuFallback').style.display='block';
         if (sf && sf.contentDocument === null) document.getElementById('speechFallback').style.display='block';
       }, 1200);
@@ -179,11 +262,11 @@
 
   <!-- App-Logik & Firebase (modular) -->
   <script type="module">
-    // Firebase ES Modules – stabile 9.23.0 (modular, kein compat)
+    /* Firebase ES Modules – stabile 9.23.0 */
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
     import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
-    // --- Firebase-Konfiguration ---
+    /* Firebase-Konfiguration */
     const firebaseConfig = {
       apiKey: "AIzaSyDEYeCmTkVGf4pTLCS-s3fV9jo1ivVPMj8",
       authDomain: "hochzeitschat.firebaseapp.com",
@@ -194,11 +277,10 @@
       appId: "1:180005609648:web:f8c8cd278a1e3830501b75"
     };
 
-    // App initialisieren
     const app = initializeApp(firebaseConfig);
     const db  = getDatabase(app);
 
-    // --- Quizfragen (deine 10) ---
+    /* Quizfragen (deine 10) */
     const questions = [
       { q:'Welches Haushaltsgerät wird von Lea täglich genutzt und treibt Nils in den Wahnsinn?', a:['Trockner','Staubsauger','Wasserkocher'], correct:'Staubsauger' },
       { q:'Wann sind Lea und Nils zusammengekommen?', a:['08.03.2017','18.03.2018','28.03.2017'], correct:'28.03.2017' },
@@ -212,59 +294,80 @@
       { q:'Wer hat zuhause die Hosen an?', a:['Lea','Nils','Beide'], correct:'Beide' },
     ];
 
-    // --- Navigation in JS (IDs) ---
+    /* === Quiz (Einzelfragen) === */
     const quizStartBtn = document.getElementById('quizStart');
-    const quizForm     = document.getElementById('quiz-form');
-    const questionsEl  = document.getElementById('questions');
+    const quizLogin    = document.getElementById('quiz-login');
+    const quizRun      = document.getElementById('quiz-run');
+    const quizQ        = document.getElementById('quiz-question');
+    const quizA        = document.getElementById('quiz-answers');
+    const quizNextBtn  = document.getElementById('quizNext');
+    const quizProgress = document.getElementById('quiz-progress');
     const resultEl     = document.getElementById('result');
     const scoreboardEl = document.getElementById('scoreboard');
 
-    const chatJoinBtn  = document.getElementById('chatJoin');
-    const chatSendBtn  = document.getElementById('chatSend');
-    const chatLogin    = document.getElementById('chat-login');
-    const chatBox      = document.getElementById('chatBox');
-    const messagesEl   = document.getElementById('messages');
-
-    const aboutSendBtn = document.getElementById('aboutSend');
-    const aboutList    = document.getElementById('aboutList');
-
-    // --- QUIZ ---
     let quizUser = "";
-    function startQuiz(){
+    let currentIndex = 0;
+    const givenAnswers = Array(questions.length).fill(null);
+
+    function renderQuestion() {
+      const q = questions[currentIndex];
+      quizProgress.textContent = `Frage ${currentIndex + 1}/${questions.length}`;
+      quizQ.innerHTML = `<p><strong>${currentIndex + 1}.</strong> ${q.q}</p>`;
+      const currentGiven = givenAnswers[currentIndex];
+
+      quizA.innerHTML = q.a.map(ans => {
+        const checked = currentGiven === ans ? "checked" : "";
+        return `<label><input type="radio" name="q" value="${ans}" ${checked}> ${ans}</label>`;
+      }).join("");
+
+      quizNextBtn.disabled = currentGiven === null;
+
+      quizA.querySelectorAll('input[name="q"]').forEach(r => {
+        r.addEventListener('change', () => {
+          givenAnswers[currentIndex] = r.value;
+          quizNextBtn.disabled = false;
+        });
+      });
+
+      quizNextBtn.textContent = (currentIndex === questions.length - 1) ? "Abschicken" : "Weiter";
+    }
+
+    function startQuiz() {
       const name = (document.getElementById('username')?.value || "").trim();
       if (!name) return alert("Bitte gib einen Namen ein.");
       quizUser = name;
+      currentIndex = 0;
+      givenAnswers.fill(null);
 
-      questionsEl.innerHTML = "";
-      questions.forEach((q,i) => {
-        const div = document.createElement('div');
-        div.className = 'question';
-        div.innerHTML = `<p><strong>${i+1}.</strong> ${q.q}</p>`;
-        const opts = q.a.map(ans => `<label><input type="radio" name="q${i}" value="${ans}"> ${ans}</label>`).join('');
-        const answers = document.createElement('div');
-        answers.className = 'answers';
-        answers.innerHTML = opts;
-        div.appendChild(answers);
-        questionsEl.appendChild(div);
-      });
-
-      document.getElementById('quiz-login').style.display = 'none';
-      quizForm.style.display = 'block';
+      quizLogin.style.display = 'none';
+      quizRun.style.display   = 'block';
+      resultEl.style.display  = 'none';
+      renderQuestion();
     }
 
     quizStartBtn.addEventListener('click', startQuiz);
 
-    quizForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const data = new FormData(quizForm);
-      let score = 0;
-      questions.forEach((q,i) => { if (data.get(`q${i}`) === q.correct) score++; });
-      // speichern
-      push(ref(db, 'scores'), { name: quizUser, score, total: questions.length, ts: Date.now() });
-      // anzeigen
-      quizForm.style.display = 'none';
-      resultEl.style.display = 'block';
-      resultEl.textContent = `${quizUser}, du hast ${score} von ${questions.length} Punkten erreicht!`;
+    quizNextBtn.addEventListener('click', () => {
+      if (currentIndex === questions.length - 1) {
+        let score = 0;
+        questions.forEach((q, i) => {
+          if (givenAnswers[i] === q.correct) score++;
+        });
+
+        push(ref(db, 'scores'), {
+          name: quizUser,
+          score,
+          total: questions.length,
+          ts: Date.now()
+        });
+
+        quizRun.style.display  = 'none';
+        resultEl.style.display = 'block';
+        resultEl.textContent   = `${quizUser}, du hast ${score} von ${questions.length} Punkten erreicht!`;
+        return;
+      }
+      currentIndex++;
+      renderQuestion();
     });
 
     // Rangliste live
@@ -273,10 +376,18 @@
       const v = snap.val();
       scores.push(v);
       const sorted = [...scores].sort((a,b) => b.score - a.score || a.ts - b.ts);
-      scoreboardEl.innerHTML = sorted.map((s,i)=>`<li><span>${i+1}. ${s.name}</span><strong>${s.score}/${s.total}</strong></li>`).join('');
+      scoreboardEl.innerHTML = sorted
+        .map((s,i)=>`<li><span>${i+1}. ${s.name}</span><strong>${s.score}/${s.total}</strong></li>`)
+        .join('');
     });
 
-    // --- CHAT ---
+    /* === Chat === */
+    const chatJoinBtn  = document.getElementById('chatJoin');
+    const chatSendBtn  = document.getElementById('chatSend');
+    const chatLogin    = document.getElementById('chat-login');
+    const chatBox      = document.getElementById('chatBox');
+    const messagesEl   = document.getElementById('messages');
+
     let chatUser = "";
     function joinChat(){
       const n = (document.getElementById('chatName')?.value || "").trim();
@@ -305,7 +416,10 @@
       messagesEl.scrollTop = messagesEl.scrollHeight;
     });
 
-    // --- ÜBER UNS ---
+    /* === Über uns === */
+    const aboutSendBtn = document.getElementById('aboutSend');
+    const aboutList    = document.getElementById('aboutList');
+
     function submitAbout(){
       const lea  = (document.getElementById('aboutLea')?.value || "").trim();
       const nils = (document.getElementById('aboutNils')?.value || "").trim();
@@ -317,7 +431,7 @@
       const n = document.getElementById('aboutNils'); if (n) n.value = "";
       const f = document.getElementById('aboutName'); if (f) f.value = "";
     }
-    document.getElementById('aboutSend').addEventListener('click', submitAbout);
+    aboutSendBtn.addEventListener('click', submitAbout);
 
     onChildAdded(ref(db, 'about'), (snap) => {
       const v = snap.val();
@@ -330,4 +444,5 @@
   </script>
 </body>
 </html>
+
 
