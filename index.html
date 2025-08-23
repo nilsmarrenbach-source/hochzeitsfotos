@@ -194,7 +194,7 @@
         <div>
           <h3>Ansehen & Herunterladen</h3>
           <p>Alle Bilder der Gäste an einem Ort.</p>
-          <a class="btn" target="_blank" href="https://www.dropbox.com/scl/fo/2avn44dduw9frc86a2vuc/ADTyW_6937n1flsezIGobfQ?rlkey=si7t1g01cc8e8moy5oeahb6bo&st=8l1z0tg5&dl=0">📤 Fotos ansehen</a>
+          <a class="btn" target="_blank" href="https://www.dropbox.com/scl/fo/2avn44dduw9frc86a2vuc/ADTyW_6937n1flsezIGobfQ?rlkey=p427wm8zvsrqo64yyg8yex0r6&st=navv0buq&dl=0">📤 Fotos ansehen</a>
         </div>
       </div>
     </section>
@@ -312,6 +312,7 @@
     <section id="admin" class="section" style="display:none;">
       <h2>🛠️ Admin-Dashboard</h2>
       <p class="muted" id="adminState">Nicht im Adminmodus. Klicke irgendwo auf „Admin“ und gib den Code ein.</p>
+
       <div class="stats" id="adminStatsArea" style="display:none;">
         <div class="card">
           <h3 style="margin-top:0;">Nutzer & Aktivität</h3>
@@ -323,6 +324,15 @@
           <canvas id="chartUsage"></canvas>
         </div>
       </div>
+
+      <div class="card" id="quizAdminWrap" style="margin-top:12px; display:none;">
+        <h3 style="margin-top:0;">Quiz verwalten</h3>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
+          <button class="btn" id="btnClearQuiz">Gesamtes Quiz leeren</button>
+        </div>
+        <div id="adminScoreList" class="muted"></div>
+      </div>
+
       <div class="card" id="adminEventsWrap" style="margin-top:12px; display:none;">
         <h3 style="margin-top:0;">Letzte Aktionen</h3>
         <div id="eventsList"></div>
@@ -353,11 +363,10 @@
     document.addEventListener('DOMContentLoaded', () => {
       const navButtons = document.querySelectorAll('nav button');
       function activate(id, btn) {
-        // Admin-Abschnitt nur anzeigen, wenn Admin
         if (id === 'admin' && !window.__isAdmin) {
           const tryLogin = confirm('Admin-Bereich – Code eingeben?');
           if (tryLogin) window.__promptAdmin && window.__promptAdmin(true);
-          return; // nicht umschalten solange nicht Admin
+          return;
         }
         document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
         document.getElementById(id).classList.add('active');
@@ -366,7 +375,6 @@
       }
       navButtons.forEach(btn => { btn.addEventListener('click', () => activate(btn.dataset.target, btn)); });
 
-      // PDF-Fallback nur für Speisekarte (Rede wurde entfernt)
       const mf = document.getElementById('menuFrame');
       setTimeout(() => {
         if (mf && mf.contentDocument === null) document.getElementById('menuFallback').style.display='block';
@@ -379,7 +387,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
     import {
       getDatabase, ref, push, onChildAdded, onChildRemoved, remove,
-      get, set, update
+      get, set, update, onChildChanged
     } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
     /* Firebase-Konfiguration */
@@ -398,7 +406,7 @@
 
     /* ===== Globaler Benutzername via Overlay ===== */
     const ADMIN_CODE = "Marrenbach24!";
-    window.__isAdmin = false; // global flag für Admin
+    window.__isAdmin = false;
     let GLOBAL_USER = "";
 
     const overlay = document.getElementById('userLoginOverlay');
@@ -413,18 +421,14 @@
       push(ref(db, 'events'), { user: u, action, ts: Date.now(), ...extra });
     }
     function initAppWithUser(){
-      // Badges
       const badge = document.getElementById('chatUserBadge');
       const status= document.getElementById('chatStatus');
       if (badge) badge.textContent = `🔒 Eingeloggt als: ${GLOBAL_USER}`;
       if (status) status.textContent = "Verbunden";
-      // DB: registrieren
       setUserInDB(GLOBAL_USER);
-      // Erste Eventspur
       logEvent('visit');
     }
 
-    // Overlay-Flow
     const saved = (localStorage.getItem('globalName')||"").trim();
     if (saved) {
       GLOBAL_USER = saved;
@@ -444,20 +448,23 @@
       initAppWithUser();
     });
 
-    /* ===== Admin-Login (Knopf oben im Chat + Tab-Blockade) ===== */
+    /* ===== Admin-Login ===== */
     const adminLoginBtn = document.getElementById('adminLogin');
     const adminSection  = document.getElementById('admin');
     const adminState    = document.getElementById('adminState');
     const adminStatsArea= document.getElementById('adminStatsArea');
     const adminEventsWrap = document.getElementById('adminEventsWrap');
+    const quizAdminWrap = document.getElementById('quizAdminWrap');
 
     function enableAdminUI(){
       window.__isAdmin = true;
       if (adminSection) adminSection.style.display = 'block';
       if (adminStatsArea) adminStatsArea.style.display = 'grid';
       if (adminEventsWrap) adminEventsWrap.style.display = 'block';
+      if (quizAdminWrap) quizAdminWrap.style.display = 'block';
       if (adminState) adminState.textContent = "Adminmodus aktiv.";
       refreshAdminUI();
+      renderAdminScoreList(); // beim Betreten direkt füllen
     }
     function promptAdmin(showSectionAfter = false){
       const code = prompt("Admin-Code eingeben:");
@@ -513,46 +520,97 @@
     const scoreboardEl = document.getElementById('scoreboard');
 
     let currentIndex = 0;
-    const givenAnswers = Array(questions.length).fill(null);
+
+    // Zentrales Score-Array (mit Keys) für Rangliste & Admin
+    const scores = []; // Elemente: { key, name, score, total, ts }
+
+    function renderPublicScoreboard() {
+      const sorted = [...scores].sort((a,b) => b.score - a.score || a.ts - b.ts);
+      scoreboardEl.innerHTML = sorted
+        .map((s,i)=>`<li><span>${i+1}. ${s.name}</span><strong>${s.score}/${s.total}</strong></li>`)
+        .join('');
+    }
+
+    function renderAdminScoreList() {
+      const listEl = document.getElementById('adminScoreList');
+      if (!listEl) return;
+      if (!window.__isAdmin) { listEl.innerHTML = ''; return; }
+      if (scores.length === 0) { listEl.innerHTML = 'Keine Einträge.'; return; }
+
+      const sorted = [...scores].sort((a,b) => b.ts - a.ts);
+      listEl.innerHTML = sorted.map(s => {
+        const when = new Date(s.ts).toLocaleString();
+        return `
+          <div class="question" data-score-id="${s.key}" style="margin-bottom:8px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div><strong>${s.name}</strong> – ${s.score}/${s.total} <span class="muted">(${when})</span></div>
+              <div>
+                <button class="del btnScoreDelete">Löschen</button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Buttons verdrahten
+      listEl.querySelectorAll('.btnScoreDelete').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          if (!window.__isAdmin) return;
+          const wrap = e.target.closest('[data-score-id]');
+          const scoreId = wrap?.dataset?.scoreId;
+          if (!scoreId) return;
+          if (confirm('Diesen Quiz-Eintrag löschen?')) {
+            remove(ref(db, 'scores/' + scoreId));
+          }
+        });
+      });
+    }
+
+    // Admin-Gesamtlöschung
+    const btnClearQuiz = document.getElementById('btnClearQuiz');
+    btnClearQuiz?.addEventListener('click', async () => {
+      if (!window.__isAdmin) return;
+      if (!confirm('Wirklich ALLE Quiz-Einträge löschen?')) return;
+      await remove(ref(db, 'scores'));
+      // lokal leeren
+      scores.splice(0, scores.length);
+      renderPublicScoreboard();
+      renderAdminScoreList();
+      alert('Alle Quiz-Einträge wurden gelöscht.');
+    });
 
     function renderQuestion() {
       const q = questions[currentIndex];
       quizProgress.textContent = `Frage ${currentIndex + 1}/${questions.length}`;
       quizQ.innerHTML = `<p><strong>${currentIndex + 1}.</strong> ${q.q}</p>`;
-      const currentGiven = givenAnswers[currentIndex];
-
-      quizA.innerHTML = q.a.map(ans => {
-        const checked = currentGiven === ans ? "checked" : "";
-        return `<label><input type="radio" name="q" value="${ans}" ${checked}> ${ans}</label>`;
-      }).join("");
-
-      quizNextBtn.disabled = currentGiven === null;
-
-      quizA.querySelectorAll('input[name="q"]').forEach(r => {
+      const name = 'q';
+      quizA.innerHTML = q.a.map(ans => `<label><input type="radio" name="${name}" value="${ans}"> ${ans}</label>`).join("");
+      quizNextBtn.disabled = true;
+      quizA.querySelectorAll(`input[name="${name}"]`).forEach(r => {
         r.addEventListener('change', () => {
-          givenAnswers[currentIndex] = r.value;
           quizNextBtn.disabled = false;
         });
       });
-
       quizNextBtn.textContent = (currentIndex === questions.length - 1) ? "Abschicken" : "Weiter";
     }
 
     function startQuiz() {
       if(!GLOBAL_USER){ alert("Bitte zuerst deinen Namen eingeben."); return; }
       currentIndex = 0;
-      givenAnswers.fill(null);
-
       quizLogin.style.display = 'none';
       quizRun.style.display   = 'block';
       resultEl.style.display  = 'none';
       renderQuestion();
       logEvent('quiz_start');
     }
-
     quizStartBtn.addEventListener('click', startQuiz);
 
+    let givenAnswers = Array(questions.length).fill(null);
     quizNextBtn.addEventListener('click', () => {
+      const sel = quizA.querySelector('input[type="radio"]:checked');
+      if (!sel) return;
+      givenAnswers[currentIndex] = sel.value;
+
       if (currentIndex === questions.length - 1) {
         let score = 0;
         questions.forEach((q, i) => { if (givenAnswers[i] === q.correct) score++; });
@@ -562,20 +620,40 @@
         resultEl.style.display = 'block';
         resultEl.textContent   = `${GLOBAL_USER}, du hast ${score} von ${questions.length} Punkten erreicht!`;
         logEvent('quiz_finish', { score });
+        // Reset für erneutes Spielen (falls Admin später löscht)
+        givenAnswers = Array(questions.length).fill(null);
         return;
       }
       currentIndex++;
       renderQuestion();
     });
 
-    const scores = [];
+    // Scores: live hinzufügen / ändern / entfernen
     onChildAdded(ref(db, 'scores'), (snap) => {
       const v = snap.val();
-      scores.push(v);
-      const sorted = [...scores].sort((a,b) => b.score - a.score || a.ts - b.ts);
-      scoreboardEl.innerHTML = sorted
-        .map((s,i)=>`<li><span>${i+1}. ${s.name}</span><strong>${s.score}/${s.total}</strong></li>`)
-        .join('');
+      const obj = { key: snap.key, name: v.name, score: v.score, total: v.total, ts: v.ts };
+      // ersetzen, falls Doppel
+      const idx = scores.findIndex(s => s.key === obj.key);
+      if (idx >= 0) scores[idx] = obj; else scores.push(obj);
+      renderPublicScoreboard();
+      if (window.__isAdmin) renderAdminScoreList();
+    });
+
+    onChildChanged(ref(db, 'scores'), (snap) => {
+      const v = snap.val();
+      const obj = { key: snap.key, name: v.name, score: v.score, total: v.total, ts: v.ts };
+      const idx = scores.findIndex(s => s.key === obj.key);
+      if (idx >= 0) scores[idx] = obj;
+      renderPublicScoreboard();
+      if (window.__isAdmin) renderAdminScoreList();
+    });
+
+    onChildRemoved(ref(db, 'scores'), (snap) => {
+      const k = snap.key;
+      const idx = scores.findIndex(s => s.key === k);
+      if (idx >= 0) scores.splice(idx, 1);
+      renderPublicScoreboard();
+      if (window.__isAdmin) renderAdminScoreList();
     });
 
     /* ===== CHAT mit Admin-Löschen ===== */
@@ -593,7 +671,7 @@
       inp.value = "";
       logEvent('chat_send');
     }
-    document.getElementById('chatSend').addEventListener('click', sendMessage);
+    chatSendBtn.addEventListener('click', sendMessage);
 
     function displayTime(ts){ return new Date(ts).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }
 
@@ -719,8 +797,6 @@
       refreshAdminUI();
     });
 
-    // Wenn bearbeitet oder gelöscht, die UI anpassen
-    import { onChildChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
     onChildChanged(ref(db, 'about'), (snap) => {
       const id = snap.key;
       const v = snap.val();
