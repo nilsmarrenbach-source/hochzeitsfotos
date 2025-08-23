@@ -43,19 +43,24 @@
       font-family:"Great Vibes", cursive;
     }
 
-    /* Globaler Benutzername-Banner */
-    #userBanner {
-      background:#fff;
-      border-bottom:1px solid var(--border);
-      padding:10px 12px;
-      display:flex;
-      gap:10px;
-      align-items:center;
-      justify-content:center;
+    /* Login Overlay (globaler Benutzername) */
+    #userLoginOverlay {
+      position:fixed; inset:0; background:var(--bg);
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      z-index:9999;
+      padding:20px;
     }
-    #userBanner .info { color:var(--muted); }
-    #userBanner input { padding:8px 10px; border:1px solid #e9dcd8; border-radius:10px; font:inherit; }
-    #userBanner .btn { padding:8px 12px; }
+    #userLoginOverlay h2 { font-family:"Playfair Display", serif; color:var(--accent); margin:0 0 10px; }
+    #userLoginOverlay p { color:var(--muted); margin:0 0 14px; }
+    #userLoginOverlay input {
+      max-width:320px; width:90%;
+      margin:10px 0; padding:12px; font-size:1rem;
+      border:1px solid var(--border); border-radius:10px;
+    }
+    #userLoginOverlay button {
+      padding:10px 18px; border-radius:10px; background:var(--accent); color:#fff;
+      border:1px solid var(--accent-dark); cursor:pointer; font-weight:600;
+    }
 
     /* Navigation */
     nav {
@@ -135,6 +140,7 @@
     .pdfToolbar .btn{padding:6px 10px}
     .pdfViewport{position:relative;overflow:auto;border:1px solid var(--border);border-radius:12px;background:#f1f1f1;height:70vh}
     .pdfViewport iframe{width:100%;height:100%;border:0;transform-origin:top left}
+
     .card{border:1px solid var(--border);border-radius:12px;padding:12px;background:#fff}
     .stats{display:grid;grid-template-columns:1fr;gap:12px}
     @media(min-width:800px){.stats{grid-template-columns:1fr 1fr}}
@@ -142,17 +148,17 @@
   </style>
 </head>
 <body>
+  <!-- Globaler Benutzername als Pflicht -->
+  <div id="userLoginOverlay">
+    <h2>Bitte gib deinen Namen ein</h2>
+    <p>Dieser Name wird für Chat, Quiz, „Über uns“ und Musikwünsche verwendet.</p>
+    <input type="text" id="globalName" placeholder="Dein Name" />
+    <button id="saveGlobalName">Weiter</button>
+  </div>
+
   <header>
     <h1>Willkommen zur Hochzeit The Marrenbach's</h1>
   </header>
-
-  <!-- Globaler Benutzername -->
-  <div id="userBanner">
-    <span class="info">Dein Benutzername für Chat, Quiz, „Über uns“ & Musikwunsch:</span>
-    <input type="text" id="globalName" placeholder="z. B. Theresa" />
-    <button class="btn" id="saveName">Speichern</button>
-    <span id="nameStatus" class="muted"></span>
-  </div>
 
   <nav aria-label="Hauptnavigation">
     <button data-target="start" aria-current="page">🏠 Startseite</button>
@@ -228,7 +234,7 @@
     <section id="quiz" class="section">
       <h2>❓ Hochzeitsquiz</h2>
       <div id="quiz-login">
-        <p>Dein Benutzername wird automatisch genutzt (oben setzen).</p>
+        <p>Dein Benutzername (oben) wird verwendet.</p>
         <button class="btn" id="quizStart">Quiz starten</button>
       </div>
       <div id="quiz-run" style="display:none">
@@ -271,14 +277,14 @@
     <!-- Musikwunsch -->
     <section id="music" class="section">
       <h2>🎵 Musikwunsch</h2>
-      <p class="muted" style="text-align:center">Jede*r darf <strong>maximal einen Wunsch pro Stunde</strong> abgeben.</p>
+      <p class="muted" style="text-align:center">Jeder darf <strong>maximal einen Wunsch pro Stunde</strong> abgeben.</p>
       <div class="grid2">
         <div class="card">
           <div class="row">
             <input type="text" id="songTitle" placeholder="Songtitel" />
           </div>
           <div class="row" style="margin-top:8px;">
-            <input type="text" id="songArtist" placeholder="Künstler*in" />
+            <input type="text" id="songArtist" placeholder="Künstler" />
           </div>
           <div class="row" style="margin-top:8px;">
             <input type="text" id="songNote" placeholder="Widmung/Kommentar (optional)" />
@@ -368,9 +374,7 @@
         navButtons.forEach(b => b.removeAttribute('aria-current'));
         if (btn) btn.setAttribute('aria-current','page');
       }
-      navButtons.forEach(btn => {
-        btn.addEventListener('click', () => activate(btn.dataset.target, btn));
-      });
+      navButtons.forEach(btn => { btn.addEventListener('click', () => activate(btn.dataset.target, btn)); });
 
       // PDF-Fallback-Hinweise
       const mf = document.getElementById('menuFrame');
@@ -384,11 +388,10 @@
 
   <!-- App-Logik & Firebase (modular) -->
   <script type="module">
-    /* Firebase ES Modules – stabile 9.23.0 */
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
     import {
       getDatabase, ref, push, onChildAdded, onChildRemoved, remove,
-      get, set, update, child
+      get, set, update
     } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
     /* Firebase-Konfiguration */
@@ -405,57 +408,59 @@
     const app = initializeApp(firebaseConfig);
     const db  = getDatabase(app);
 
-    /* ===== Globaler Benutzername ===== */
-    const nameInput = document.getElementById('globalName');
-    const saveNameBtn = document.getElementById('saveName');
-    const nameStatus = document.getElementById('nameStatus');
-
+    /* ===== Globaler Benutzername via Overlay ===== */
     const ADMIN_CODE = "Marrenbach24!";
     let isAdmin = false;
+    let GLOBAL_USER = "";
 
-    function getUser(){
-      return (localStorage.getItem('appUserName')||"").trim();
-    }
-    function setUser(n){
-      localStorage.setItem('appUserName', n);
-      nameStatus.textContent = `🔒 Eingeloggt als: ${n}`;
-      // als „user“ in DB registrieren / aktualisieren
-      const uref = ref(db, 'users/' + encodeURIComponent(n));
-      update(uref, { lastSeen: Date.now(), createdAt: Date.now() }).catch(()=>{});
-      logEvent('login');
-    }
+    const overlay = document.getElementById('userLoginOverlay');
+    const nameInput = document.getElementById('globalName');
+    const saveBtn   = document.getElementById('saveGlobalName');
 
-    // init Banner
-    const existing = getUser();
-    if(existing){
-      nameInput.value = existing;
-      nameStatus.textContent = `🔒 Eingeloggt als: ${existing}`;
+    function setUserInDB(name){
+      update(ref(db, 'users/' + encodeURIComponent(name)), { lastSeen: Date.now(), createdAt: Date.now() }).catch(()=>{});
     }
-
-    saveNameBtn.addEventListener('click', () => {
-      const n = (nameInput.value||"").trim();
-      if(!n) return alert("Bitte gib einen Namen ein.");
-      if(getUser()){ return alert("Benutzername ist bereits gesetzt (für diese Sitzung)."); }
-      setUser(n);
-    });
-
-    // kleine Helper
-    function requireUser(){
-      const u = getUser();
-      if(!u){ alert("Bitte oben deinen Benutzernamen setzen."); }
-      return !!u;
-    }
-    function displayTime(ts){
-      return new Date(ts).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-    }
-
-    /* ===== Events / Stats logging ===== */
     function logEvent(action, extra = {}){
-      const u = getUser() || 'Gast';
+      const u = GLOBAL_USER || 'Gast';
       push(ref(db, 'events'), { user: u, action, ts: Date.now(), ...extra });
     }
-    // Beim Laden: „visit“
-    logEvent('visit');
+    function initAppWithUser(){
+      // Badges
+      const badge = document.getElementById('chatUserBadge');
+      const status= document.getElementById('chatStatus');
+      if (badge) badge.textContent = `🔒 Eingeloggt als: ${GLOBAL_USER}`;
+      if (status) status.textContent = "Verbunden";
+
+      // DB: registrieren
+      setUserInDB(GLOBAL_USER);
+      // Erste Eventspur
+      logEvent('visit');
+    }
+
+    // Overlay-Flow
+    const saved = (localStorage.getItem('globalName')||"").trim();
+    if (saved) {
+      GLOBAL_USER = saved;
+      overlay.style.display = 'none';
+      document.body.style.overflow = 'auto';
+      initAppWithUser();
+    } else {
+      document.body.style.overflow = 'hidden';
+    }
+    saveBtn.addEventListener('click', () => {
+      const n = (nameInput.value||"").trim();
+      if(!n) return alert("Bitte gib einen Namen ein.");
+      GLOBAL_USER = n;
+      localStorage.setItem('globalName', GLOBAL_USER);
+      overlay.style.display = 'none';
+      document.body.style.overflow = 'auto';
+      initAppWithUser();
+    });
+
+    /* ===== Navigation-Events für Stats ===== */
+    document.querySelectorAll('nav button').forEach(b=>{
+      b.addEventListener('click', ()=> logEvent('nav', { to: b.dataset.target }));
+    });
 
     /* ===== QUIZ ===== */
     const questions = [
@@ -481,7 +486,6 @@
     const resultEl     = document.getElementById('result');
     const scoreboardEl = document.getElementById('scoreboard');
 
-    let quizUser = "";
     let currentIndex = 0;
     const givenAnswers = Array(questions.length).fill(null);
 
@@ -509,8 +513,7 @@
     }
 
     function startQuiz() {
-      if(!requireUser()) return;
-      quizUser = getUser();
+      if(!GLOBAL_USER){ alert("Bitte zuerst deinen Namen eingeben."); return; }
       currentIndex = 0;
       givenAnswers.fill(null);
 
@@ -528,10 +531,10 @@
         let score = 0;
         questions.forEach((q, i) => { if (givenAnswers[i] === q.correct) score++; });
 
-        push(ref(db, 'scores'), { name: quizUser, score, total: questions.length, ts: Date.now() });
+        push(ref(db, 'scores'), { name: GLOBAL_USER, score, total: questions.length, ts: Date.now() });
         quizRun.style.display  = 'none';
         resultEl.style.display = 'block';
-        resultEl.textContent   = `${quizUser}, du hast ${score} von ${questions.length} Punkten erreicht!`;
+        resultEl.textContent   = `${GLOBAL_USER}, du hast ${score} von ${questions.length} Punkten erreicht!`;
         logEvent('quiz_finish', { score });
         return;
       }
@@ -551,16 +554,17 @@
 
     /* ===== CHAT mit Admin-Löschen ===== */
     const chatSendBtn = document.getElementById('chatSend');
-    const messagesEl   = document.getElementById('messages');
-    const chatStatus   = document.getElementById('chatStatus');
-    const chatUserBadge= document.getElementById('chatUserBadge');
-    const adminLoginBtn= document.getElementById('adminLogin');
+    const messagesEl  = document.getElementById('messages');
+    const chatStatus  = document.getElementById('chatStatus');
+    const chatUserBadge = document.getElementById('chatUserBadge');
+    const adminLoginBtn = document.getElementById('adminLogin');
 
-    if(getUser()){
-      chatUserBadge.textContent = `🔒 Eingeloggt als: ${getUser()}`;
-      chatStatus.textContent = "Verbunden";
-    } else {
-      chatStatus.textContent = "Bitte oben Benutzernamen setzen.";
+    function refreshAdminUI() {
+      document.querySelectorAll('.msg .del').forEach(btn => {
+        btn.style.display = isAdmin ? 'inline-block' : 'none';
+      });
+      const adminState = document.getElementById('adminState');
+      if (adminState) adminState.textContent = isAdmin ? "Adminmodus aktiv." : "Nicht im Adminmodus. Klicke im Chat oben rechts auf „Admin“ und gib den Code ein.";
     }
 
     adminLoginBtn?.addEventListener('click', () => {
@@ -568,34 +572,29 @@
       if (code === ADMIN_CODE) {
         isAdmin = true;
         alert("Admin-Modus aktiv.");
-        document.getElementById('adminState').textContent = "Adminmodus aktiv.";
         refreshAdminUI();
       } else if (code !== null) {
         alert("Falscher Code.");
       }
     });
 
-    function refreshAdminUI() {
-      document.querySelectorAll('.msg .del').forEach(btn => {
-        btn.style.display = isAdmin ? 'inline-block' : 'none';
-      });
-    }
-
     function sendMessage(){
-      if(!requireUser()) return;
+      if(!GLOBAL_USER){ alert("Bitte zuerst deinen Namen eingeben."); return; }
       const inp = document.getElementById('messageInput');
       const msg = (inp?.value || "").trim();
       if (!msg) return;
-      push(ref(db, 'messages'), { name: getUser(), message: msg, ts: Date.now() });
+      push(ref(db, 'messages'), { name: GLOBAL_USER, message: msg, ts: Date.now() });
       inp.value = "";
       logEvent('chat_send');
     }
     chatSendBtn.addEventListener('click', sendMessage);
 
+    function displayTime(ts){ return new Date(ts).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }
+
     onChildAdded(ref(db, 'messages'), (snap) => {
       const id = snap.key;
       const m  = snap.val();
-      const mine = (getUser() && m.name === getUser());
+      const mine = (GLOBAL_USER && m.name === GLOBAL_USER);
 
       const wrap = document.createElement('div');
       wrap.className = mine ? 'msg-wrap mine-wrap' : 'msg-wrap';
@@ -629,6 +628,10 @@
       wrap.appendChild(bubble);
       messagesEl.appendChild(wrap);
       messagesEl.scrollTop = messagesEl.scrollHeight;
+
+      // Status/Banner aktualisieren
+      if (chatUserBadge && GLOBAL_USER) chatUserBadge.textContent = `🔒 Eingeloggt als: ${GLOBAL_USER}`;
+      if (chatStatus) chatStatus.textContent = "Verbunden";
     });
 
     onChildRemoved(ref(db, 'messages'), (snap) => {
@@ -642,10 +645,10 @@
     const aboutList    = document.getElementById('aboutList');
 
     function submitAbout(){
-      if(!requireUser()) return;
+      if(!GLOBAL_USER){ alert("Bitte zuerst deinen Namen eingeben."); return; }
       const lea  = (document.getElementById('aboutLea')?.value || "").trim();
       const nils = (document.getElementById('aboutNils')?.value || "").trim();
-      const from = getUser();
+      const from = GLOBAL_USER;
       if (!lea && !nils) return alert("Bitte schreibe etwas zu Lea oder Nils.");
       if (lea)  push(ref(db, 'about'), { who:'Lea',  text: lea,  from, ts: Date.now() });
       if (nils) push(ref(db, 'about'), { who:'Nils', text: nils, from, ts: Date.now() });
@@ -662,12 +665,27 @@
       card.className = 'question';
       card.dataset.id = id;
       const from = v.from ? ` – <span class="muted">von ${v.from}</span>` : '';
-      const del = isAdmin ? `<button class="del" data-id="${id}">✕</button>` : '';
-      card.innerHTML = `<div><strong>${v.who}</strong>${from} ${del}</div><div style="margin-top:6px;">${v.text}</div>`;
-      card.querySelector('.del')?.addEventListener('click', () => {
+
+      const container = document.createElement('div');
+      const top = document.createElement('div');
+      top.innerHTML = `<strong>${v.who}</strong>${from}`;
+      const del = document.createElement('button');
+      del.className = 'del';
+      del.textContent = '✕';
+      del.style.display = isAdmin ? 'inline-block' : 'none';
+      del.addEventListener('click', () => {
         if(!isAdmin) return;
         if(confirm("Diesen Eintrag löschen?")) remove(ref(db, 'about/' + id));
       });
+      top.appendChild(del);
+
+      const text = document.createElement('div');
+      text.style.marginTop = '6px';
+      text.textContent = v.text;
+
+      container.appendChild(top);
+      container.appendChild(text);
+      card.appendChild(container);
       aboutList.appendChild(card);
       refreshAdminUI();
     });
@@ -684,13 +702,13 @@
     const songList = document.getElementById('songList');
 
     songSendBtn.addEventListener('click', async () => {
-      if(!requireUser()) return;
+      if(!GLOBAL_USER){ alert("Bitte zuerst deinen Namen eingeben."); return; }
       const title = (document.getElementById('songTitle')?.value || '').trim();
       const artist= (document.getElementById('songArtist')?.value || '').trim();
       const note  = (document.getElementById('songNote')?.value || '').trim();
       if(!title || !artist) return alert("Bitte Songtitel und Künstler*in angeben.");
 
-      const uname = getUser();
+      const uname = GLOBAL_USER;
       const limitRef = ref(db, 'musicLimits/' + encodeURIComponent(uname));
       const snap = await get(limitRef);
       const now = Date.now();
@@ -703,12 +721,9 @@
         return;
       }
 
-      // Wunsch speichern
       push(ref(db, 'music'), { user: uname, title, artist, note, ts: now });
-      // Limit setzen
       await set(limitRef, { lastTs: now });
 
-      // Felder leeren
       document.getElementById('songTitle').value = '';
       document.getElementById('songArtist').value = '';
       document.getElementById('songNote').value = '';
@@ -721,16 +736,32 @@
       const div = document.createElement('div');
       div.className = 'question';
       div.dataset.id = snap.key;
-      const delBtn = isAdmin ? `<button class="del" data-id="${snap.key}">✕</button>` : '';
-      div.innerHTML = `<strong>${m.title}</strong> – ${m.artist} <span class="muted">(${m.user}, ${displayTime(m.ts)})</span> ${delBtn}
-                       ${m.note ? `<div class="muted" style="margin-top:6px;">„${m.note}“</div>` : ''}`;
-      div.querySelector('.del')?.addEventListener('click', () => {
+      const delBtn = document.createElement('button');
+      delBtn.className = 'del';
+      delBtn.textContent = '✕';
+      delBtn.style.display = isAdmin ? 'inline-block' : 'none';
+      delBtn.addEventListener('click', () => {
         if(!isAdmin) return;
         if(confirm("Diesen Musikwunsch löschen?")) remove(ref(db, 'music/' + snap.key));
       });
+
+      const header = document.createElement('div');
+      header.innerHTML = `<strong>${m.title}</strong> – ${m.artist} <span class="muted">(${m.user}, ${displayTime(m.ts)})</span>`;
+      header.appendChild(delBtn);
+      div.appendChild(header);
+
+      if (m.note) {
+        const note = document.createElement('div');
+        note.className = 'muted';
+        note.style.marginTop = '6px';
+        note.textContent = `„${m.note}“`;
+        div.appendChild(note);
+      }
+
       songList.prepend(div);
       refreshAdminUI();
     });
+
     onChildRemoved(ref(db, 'music'), (snap) => {
       const el = document.querySelector(`[data-id="${snap.key}"]`);
       if(el) el.remove();
@@ -742,7 +773,6 @@
     const eventsList = document.getElementById('eventsList');
     const chartCanvas = document.getElementById('chartUsage');
 
-    // Nutzer zählen
     const userSet = new Set();
     onChildAdded(ref(db, 'users'), (snap) => {
       const uname = decodeURIComponent(snap.key);
@@ -750,7 +780,6 @@
       statsUsers.textContent = `Einzigartige Nutzer*innen: ${userSet.size}`;
     });
 
-    // Events anzeigen + heutige Nutzung nach Stunden
     const todayHours = Array(24).fill(0);
     function redrawChart(){
       const ctx = chartCanvas.getContext('2d');
@@ -759,6 +788,7 @@
       ctx.clearRect(0,0,w,h);
       const max = Math.max(1, ...todayHours);
       const barW = w / 24 - 4;
+      ctx.font = "12px system-ui";
       for(let i=0;i<24;i++){
         const x = i * (w/24) + 2;
         const val = todayHours[i];
@@ -773,31 +803,24 @@
     }
     onChildAdded(ref(db, 'events'), (snap) => {
       const e = snap.val();
-      // Liste
       const li = document.createElement('div');
       li.className = 'muted';
       li.textContent = `[${new Date(e.ts).toLocaleString()}] ${e.user}: ${e.action}`;
       eventsList.prepend(li);
-      // Stunde zählen (nur heute)
       if(isToday(e.ts)){
         const hr = new Date(e.ts).getHours();
         todayHours[hr] = (todayHours[hr]||0)+1;
         redrawChart();
       }
-      // Gesamt
       const total = Number(statsEvents.dataset.total||0) + 1;
       statsEvents.dataset.total = total;
       statsEvents.textContent = `Gesamt-Events: ${total}`;
     });
 
-    // Wenn Name gesetzt/aktiv ⇒ user in DB registrieren
-    if(getUser()){
-      const uref = ref(db, 'users/' + encodeURIComponent(getUser()));
-      update(uref, { lastSeen: Date.now(), createdAt: Date.now() }).catch(()=>{});
-    }
   </script>
 </body>
 </html>
+
 
 
 
