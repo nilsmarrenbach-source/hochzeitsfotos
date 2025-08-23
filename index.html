@@ -220,7 +220,10 @@
 
       <div id="chatHeader">
         <div class="muted" id="chatStatus"></div>
-        <div class="muted" id="chatUserBadge"></div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <div class="muted" id="chatUserBadge"></div>
+          <button class="btn" id="adminLogin" style="padding:6px 10px;">Admin</button>
+        </div>
       </div>
 
       <div id="chat-login" class="row" style="justify-content:center; margin-bottom:12px;">
@@ -292,7 +295,10 @@
   <script type="module">
     /* Firebase ES Modules – stabile 9.23.0 */
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-    import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+    import {
+      getDatabase, ref, push,
+      onChildAdded, onChildRemoved, remove
+    } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
     /* Firebase-Konfiguration */
     const firebaseConfig = {
@@ -409,7 +415,7 @@
         .join('');
     });
 
-    /* === Chat === */
+    /* === Chat mit Admin-Funktion === */
     const chatJoinBtn  = document.getElementById('chatJoin');
     const chatSendBtn  = document.getElementById('chatSend');
     const chatLoginBox = document.getElementById('chat-login');
@@ -417,7 +423,28 @@
     const messagesEl   = document.getElementById('messages');
     const chatStatus   = document.getElementById('chatStatus');
     const chatUserBadge= document.getElementById('chatUserBadge');
+    const adminLoginBtn= document.getElementById('adminLogin');
+
     let chatUser = "";
+    const ADMIN_CODE = "Marrenbach24!"; // <<< hier deinen Code festlegen
+    let isAdmin = false;
+
+    function refreshAdminUI() {
+      document.querySelectorAll('.msg [data-action="delete"]').forEach(btn => {
+        btn.style.display = isAdmin ? 'inline-block' : 'none';
+      });
+    }
+
+    adminLoginBtn?.addEventListener('click', () => {
+      const code = prompt("Admin-Code eingeben:");
+      if (code === ADMIN_CODE) {
+        isAdmin = true;
+        alert("Admin-Modus aktiv.");
+        refreshAdminUI();
+      } else if (code !== null) {
+        alert("Falscher Code.");
+      }
+    });
 
     // beim Laden: gespeicherten Namen nutzen (nicht änderbar)
     const saved = localStorage.getItem('chatName');
@@ -452,21 +479,46 @@
     chatJoinBtn.addEventListener('click', joinChat);
     chatSendBtn.addEventListener('click', sendMessage);
 
+    // Nachrichten hinzufügen (mit Lösch-Button für Admin)
     onChildAdded(ref(db, 'messages'), (snap) => {
-      const m = snap.val();
+      const id = snap.key;
+      const m  = snap.val();
       const mine = (chatUser && m.name === chatUser);
       const time = new Date(m.ts).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
 
       const wrap = document.createElement('div');
       wrap.className = mine ? 'msg-wrap mine-wrap' : 'msg-wrap';
+      wrap.dataset.id = id;
 
       const bubble = document.createElement('div');
       bubble.className = mine ? 'msg mine' : 'msg';
-      bubble.innerHTML = `<div class="meta">[${time}] <strong>${m.name}</strong></div><div>${m.message}</div>`;
+
+      const delBtn = `
+        <button data-action="delete" data-id="${id}" title="Nachricht löschen"
+          style="display:${isAdmin ? 'inline-block' : 'none'}; margin-left:8px; background:none; border:1px solid #e1c8c2; border-radius:6px; padding:2px 6px; cursor:pointer;">
+          ✕
+        </button>`;
+
+      bubble.innerHTML = `<div class="meta">[${time}] <strong>${m.name}</strong> ${delBtn}</div><div>${m.message}</div>`;
+
+      bubble.querySelector('[data-action="delete"]')?.addEventListener('click', (ev) => {
+        const msgId = ev.currentTarget.getAttribute('data-id');
+        if (!isAdmin) return;
+        if (confirm("Diese Nachricht wirklich löschen?")) {
+          remove(ref(db, 'messages/' + msgId));
+        }
+      });
 
       wrap.appendChild(bubble);
       messagesEl.appendChild(wrap);
       messagesEl.scrollTop = messagesEl.scrollHeight;
+    });
+
+    // Nachrichten entfernen (DOM bereinigen)
+    onChildRemoved(ref(db, 'messages'), (snap) => {
+      const id = snap.key;
+      const el = document.querySelector(`.msg-wrap[data-id="${id}"]`);
+      if (el) el.remove();
     });
 
     /* === Über uns === */
@@ -497,4 +549,5 @@
   </script>
 </body>
 </html>
+
 
