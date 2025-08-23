@@ -114,7 +114,7 @@
     #quiz-progress { font-family:"Playfair Display", serif; color:var(--muted); }
     ul#scoreboard { list-style:none; padding:0; margin:0; }
     ul#scoreboard li {
-      padding:8px 10px; border-bottom:1px dashed #e5d6d2; display:flex; justify-content:space-between;
+      padding:8px 10px; border-bottom:1px dashed #e5e5e5; display:flex; justify-content:space-between;
       font-family:"Playfair Display", serif;
     }
 
@@ -164,7 +164,6 @@
     <button data-target="start" aria-current="page">🏠 Startseite</button>
     <button data-target="fotos">📸 Fotos</button>
     <button data-target="speisekarte">🍽️ Speisekarte</button>
-    <button data-target="rede">💬 Hochzeitsrede</button>
     <button data-target="quiz">❓ Quiz</button>
     <button data-target="chat">💬 Chat</button>
     <button data-target="music">🎵 Musikwunsch</button>
@@ -213,21 +212,6 @@
         <iframe id="menuFrame" src="speisekarte.pdf" title="Speisekarte"></iframe>
       </div>
       <div id="menuFallback" class="note" style="display:none;">Speisekarte nicht gefunden (speisekarte.pdf).</div>
-    </section>
-
-    <!-- Rede -->
-    <section id="rede" class="section">
-      <h2>💬 Hochzeitsrede</h2>
-      <div class="pdfToolbar">
-        <button class="btn" onclick="zoomPDF('speechFrame','out')">−</button>
-        <button class="btn" onclick="zoomPDF('speechFrame','reset')">100%</button>
-        <button class="btn" onclick="zoomPDF('speechFrame','in')">+</button>
-        <a class="btn" href="hochzeitsrede.pdf" target="_blank">🔎 Vollbild</a>
-      </div>
-      <div class="pdfViewport">
-        <iframe id="speechFrame" src="hochzeitsrede.pdf" title="Hochzeitsrede"></iframe>
-      </div>
-      <div id="speechFallback" class="note" style="display:none;">Hochzeitsrede nicht gefunden (hochzeitsrede.pdf).</div>
     </section>
 
     <!-- Quiz (Einzelfragen) -->
@@ -324,11 +308,11 @@
       </div>
     </section>
 
-    <!-- Admin -->
-    <section id="admin" class="section">
+    <!-- Admin (nur sichtbar nach erfolgreichem Login) -->
+    <section id="admin" class="section" style="display:none;">
       <h2>🛠️ Admin-Dashboard</h2>
-      <p class="muted" id="adminState">Nicht im Adminmodus. Klicke im Chat oben rechts auf „Admin“ und gib den Code ein.</p>
-      <div class="stats">
+      <p class="muted" id="adminState">Nicht im Adminmodus. Klicke irgendwo auf „Admin“ und gib den Code ein.</p>
+      <div class="stats" id="adminStatsArea" style="display:none;">
         <div class="card">
           <h3 style="margin-top:0;">Nutzer & Aktivität</h3>
           <div id="statsUsers" class="muted">–</div>
@@ -339,7 +323,7 @@
           <canvas id="chartUsage"></canvas>
         </div>
       </div>
-      <div class="card" style="margin-top:12px;">
+      <div class="card" id="adminEventsWrap" style="margin-top:12px; display:none;">
         <h3 style="margin-top:0;">Letzte Aktionen</h3>
         <div id="eventsList"></div>
       </div>
@@ -369,6 +353,12 @@
     document.addEventListener('DOMContentLoaded', () => {
       const navButtons = document.querySelectorAll('nav button');
       function activate(id, btn) {
+        // Admin-Abschnitt nur anzeigen, wenn Admin
+        if (id === 'admin' && !window.__isAdmin) {
+          const tryLogin = confirm('Admin-Bereich – Code eingeben?');
+          if (tryLogin) window.__promptAdmin && window.__promptAdmin(true);
+          return; // nicht umschalten solange nicht Admin
+        }
         document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
         document.getElementById(id).classList.add('active');
         navButtons.forEach(b => b.removeAttribute('aria-current'));
@@ -376,12 +366,10 @@
       }
       navButtons.forEach(btn => { btn.addEventListener('click', () => activate(btn.dataset.target, btn)); });
 
-      // PDF-Fallback-Hinweise
+      // PDF-Fallback nur für Speisekarte (Rede wurde entfernt)
       const mf = document.getElementById('menuFrame');
-      const sf = document.getElementById('speechFrame');
       setTimeout(() => {
         if (mf && mf.contentDocument === null) document.getElementById('menuFallback').style.display='block';
-        if (sf && sf.contentDocument === null) document.getElementById('speechFallback').style.display='block';
       }, 1200);
     });
   </script>
@@ -410,7 +398,7 @@
 
     /* ===== Globaler Benutzername via Overlay ===== */
     const ADMIN_CODE = "Marrenbach24!";
-    let isAdmin = false;
+    window.__isAdmin = false; // global flag für Admin
     let GLOBAL_USER = "";
 
     const overlay = document.getElementById('userLoginOverlay');
@@ -430,7 +418,6 @@
       const status= document.getElementById('chatStatus');
       if (badge) badge.textContent = `🔒 Eingeloggt als: ${GLOBAL_USER}`;
       if (status) status.textContent = "Verbunden";
-
       // DB: registrieren
       setUserInDB(GLOBAL_USER);
       // Erste Eventspur
@@ -456,6 +443,45 @@
       document.body.style.overflow = 'auto';
       initAppWithUser();
     });
+
+    /* ===== Admin-Login (Knopf oben im Chat + Tab-Blockade) ===== */
+    const adminLoginBtn = document.getElementById('adminLogin');
+    const adminSection  = document.getElementById('admin');
+    const adminState    = document.getElementById('adminState');
+    const adminStatsArea= document.getElementById('adminStatsArea');
+    const adminEventsWrap = document.getElementById('adminEventsWrap');
+
+    function enableAdminUI(){
+      window.__isAdmin = true;
+      if (adminSection) adminSection.style.display = 'block';
+      if (adminStatsArea) adminStatsArea.style.display = 'grid';
+      if (adminEventsWrap) adminEventsWrap.style.display = 'block';
+      if (adminState) adminState.textContent = "Adminmodus aktiv.";
+      refreshAdminUI();
+    }
+    function promptAdmin(showSectionAfter = false){
+      const code = prompt("Admin-Code eingeben:");
+      if (code === ADMIN_CODE) {
+        alert("Admin-Modus aktiv.");
+        enableAdminUI();
+        if (showSectionAfter) {
+          document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+          adminSection.classList.add('active');
+          document.querySelectorAll('nav button').forEach(b=>b.removeAttribute('aria-current'));
+          document.querySelector('nav button[data-target="admin"]')?.setAttribute('aria-current','page');
+        }
+      } else if (code !== null) {
+        alert("Falscher Code.");
+      }
+    }
+    window.__promptAdmin = promptAdmin;
+    adminLoginBtn?.addEventListener('click', () => promptAdmin(false));
+
+    function refreshAdminUI() {
+      document.querySelectorAll('.msg .del, .question .del, #songList .del').forEach(btn => {
+        btn.style.display = window.__isAdmin ? 'inline-block' : 'none';
+      });
+    }
 
     /* ===== Navigation-Events für Stats ===== */
     document.querySelectorAll('nav button').forEach(b=>{
@@ -557,26 +583,6 @@
     const messagesEl  = document.getElementById('messages');
     const chatStatus  = document.getElementById('chatStatus');
     const chatUserBadge = document.getElementById('chatUserBadge');
-    const adminLoginBtn = document.getElementById('adminLogin');
-
-    function refreshAdminUI() {
-      document.querySelectorAll('.msg .del').forEach(btn => {
-        btn.style.display = isAdmin ? 'inline-block' : 'none';
-      });
-      const adminState = document.getElementById('adminState');
-      if (adminState) adminState.textContent = isAdmin ? "Adminmodus aktiv." : "Nicht im Adminmodus. Klicke im Chat oben rechts auf „Admin“ und gib den Code ein.";
-    }
-
-    adminLoginBtn?.addEventListener('click', () => {
-      const code = prompt("Admin-Code eingeben:");
-      if (code === ADMIN_CODE) {
-        isAdmin = true;
-        alert("Admin-Modus aktiv.");
-        refreshAdminUI();
-      } else if (code !== null) {
-        alert("Falscher Code.");
-      }
-    });
 
     function sendMessage(){
       if(!GLOBAL_USER){ alert("Bitte zuerst deinen Namen eingeben."); return; }
@@ -587,7 +593,7 @@
       inp.value = "";
       logEvent('chat_send');
     }
-    chatSendBtn.addEventListener('click', sendMessage);
+    document.getElementById('chatSend').addEventListener('click', sendMessage);
 
     function displayTime(ts){ return new Date(ts).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }
 
@@ -607,9 +613,9 @@
       const del = document.createElement('button');
       del.className = 'del';
       del.textContent = '✕';
-      del.style.display = isAdmin ? 'inline-block' : 'none';
+      del.style.display = window.__isAdmin ? 'inline-block' : 'none';
       del.addEventListener('click', () => {
-        if (!isAdmin) return;
+        if (!window.__isAdmin) return;
         if (confirm("Diese Nachricht wirklich löschen?")) {
           remove(ref(db, 'messages/' + id));
         }
@@ -629,7 +635,6 @@
       messagesEl.appendChild(wrap);
       messagesEl.scrollTop = messagesEl.scrollHeight;
 
-      // Status/Banner aktualisieren
       if (chatUserBadge && GLOBAL_USER) chatUserBadge.textContent = `🔒 Eingeloggt als: ${GLOBAL_USER}`;
       if (chatStatus) chatStatus.textContent = "Verbunden";
     });
@@ -640,7 +645,7 @@
       if (el) el.remove();
     });
 
-    /* ===== ÜBER UNS – Einträge + Admin-Löschen ===== */
+    /* ===== ÜBER UNS – Einträge + Admin-Löschen + Admin-Bearbeiten ===== */
     const aboutSendBtn = document.getElementById('aboutSend');
     const aboutList    = document.getElementById('aboutList');
 
@@ -658,35 +663,69 @@
     }
     aboutSendBtn.addEventListener('click', submitAbout);
 
-    onChildAdded(ref(db, 'about'), (snap) => {
-      const id = snap.key;
-      const v  = snap.val();
+    function renderAboutCard(id, v){
       const card = document.createElement('div');
       card.className = 'question';
       card.dataset.id = id;
-      const from = v.from ? ` – <span class="muted">von ${v.from}</span>` : '';
 
-      const container = document.createElement('div');
-      const top = document.createElement('div');
-      top.innerHTML = `<strong>${v.who}</strong>${from}`;
-      const del = document.createElement('button');
-      del.className = 'del';
-      del.textContent = '✕';
-      del.style.display = isAdmin ? 'inline-block' : 'none';
-      del.addEventListener('click', () => {
-        if(!isAdmin) return;
+      const header = document.createElement('div');
+      header.innerHTML = `<strong>${v.who}</strong>${v.from ? ` – <span class="muted">von ${v.from}</span>` : ''}`;
+
+      const btnWrap = document.createElement('div');
+      btnWrap.style.display = 'inline-flex';
+      btnWrap.style.gap = '6px';
+      btnWrap.style.marginLeft = '8px';
+
+      const editBtn = document.createElement('button');
+      editBtn.className = 'del';
+      editBtn.textContent = 'Bearbeiten';
+      editBtn.style.display = window.__isAdmin ? 'inline-block' : 'none';
+      editBtn.addEventListener('click', async () => {
+        if(!window.__isAdmin) return;
+        const newWho = prompt('Wer? (Lea oder Nils)', v.who);
+        if (!newWho) return;
+        const newText = prompt('Neuer Text:', v.text);
+        if (newText === null) return;
+        await update(ref(db, 'about/' + id), { who: newWho, text: newText });
+      });
+
+      const delBtn = document.createElement('button');
+      delBtn.className = 'del';
+      delBtn.textContent = '✕';
+      delBtn.style.display = window.__isAdmin ? 'inline-block' : 'none';
+      delBtn.addEventListener('click', () => {
+        if(!window.__isAdmin) return;
         if(confirm("Diesen Eintrag löschen?")) remove(ref(db, 'about/' + id));
       });
-      top.appendChild(del);
+
+      btnWrap.appendChild(editBtn);
+      btnWrap.appendChild(delBtn);
+      header.appendChild(btnWrap);
 
       const text = document.createElement('div');
       text.style.marginTop = '6px';
       text.textContent = v.text;
 
-      container.appendChild(top);
-      container.appendChild(text);
-      card.appendChild(container);
+      card.appendChild(header);
+      card.appendChild(text);
+      return card;
+    }
+
+    onChildAdded(ref(db, 'about'), (snap) => {
+      const id = snap.key;
+      const v  = snap.val();
+      const card = renderAboutCard(id, v);
       aboutList.appendChild(card);
+      refreshAdminUI();
+    });
+
+    // Wenn bearbeitet oder gelöscht, die UI anpassen
+    import { onChildChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+    onChildChanged(ref(db, 'about'), (snap) => {
+      const id = snap.key;
+      const v = snap.val();
+      const old = document.querySelector(`.question[data-id="${id}"]`);
+      if (old) old.replaceWith(renderAboutCard(id, v));
       refreshAdminUI();
     });
 
@@ -706,7 +745,7 @@
       const title = (document.getElementById('songTitle')?.value || '').trim();
       const artist= (document.getElementById('songArtist')?.value || '').trim();
       const note  = (document.getElementById('songNote')?.value || '').trim();
-      if(!title || !artist) return alert("Bitte Songtitel und Künstler*in angeben.");
+      if(!title || !artist) return alert("Bitte Songtitel und Künstler angeben.");
 
       const uname = GLOBAL_USER;
       const limitRef = ref(db, 'musicLimits/' + encodeURIComponent(uname));
@@ -739,9 +778,9 @@
       const delBtn = document.createElement('button');
       delBtn.className = 'del';
       delBtn.textContent = '✕';
-      delBtn.style.display = isAdmin ? 'inline-block' : 'none';
+      delBtn.style.display = window.__isAdmin ? 'inline-block' : 'none';
       delBtn.addEventListener('click', () => {
-        if(!isAdmin) return;
+        if(!window.__isAdmin) return;
         if(confirm("Diesen Musikwunsch löschen?")) remove(ref(db, 'music/' + snap.key));
       });
 
@@ -767,7 +806,7 @@
       if(el) el.remove();
     });
 
-    /* ===== ADMIN: einfache Statistiken ===== */
+    /* ===== ADMIN: einfache Statistiken (nur im Adminmodus sichtbar) ===== */
     const statsUsers = document.getElementById('statsUsers');
     const statsEvents = document.getElementById('statsEvents');
     const eventsList = document.getElementById('eventsList');
@@ -777,11 +816,14 @@
     onChildAdded(ref(db, 'users'), (snap) => {
       const uname = decodeURIComponent(snap.key);
       userSet.add(uname);
-      statsUsers.textContent = `Einzigartige Nutzer*innen: ${userSet.size}`;
+      if (window.__isAdmin && statsUsers) {
+        statsUsers.textContent = `Einzigartige Nutzer: ${userSet.size}`;
+      }
     });
 
     const todayHours = Array(24).fill(0);
     function redrawChart(){
+      if (!window.__isAdmin || !chartCanvas) return;
       const ctx = chartCanvas.getContext('2d');
       const w = chartCanvas.width = chartCanvas.clientWidth;
       const h = chartCanvas.height = 220;
@@ -803,24 +845,25 @@
     }
     onChildAdded(ref(db, 'events'), (snap) => {
       const e = snap.val();
-      const li = document.createElement('div');
-      li.className = 'muted';
-      li.textContent = `[${new Date(e.ts).toLocaleString()}] ${e.user}: ${e.action}`;
-      eventsList.prepend(li);
-      if(isToday(e.ts)){
-        const hr = new Date(e.ts).getHours();
-        todayHours[hr] = (todayHours[hr]||0)+1;
-        redrawChart();
+      if (window.__isAdmin) {
+        const li = document.createElement('div');
+        li.className = 'muted';
+        li.textContent = `[${new Date(e.ts).toLocaleString()}] ${e.user}: ${e.action}`;
+        eventsList?.prepend(li);
+        if(isToday(e.ts)){
+          const hr = new Date(e.ts).getHours();
+          todayHours[hr] = (todayHours[hr]||0)+1;
+          redrawChart();
+        }
+        const total = Number(statsEvents?.dataset.total||0) + 1;
+        if (statsEvents){
+          statsEvents.dataset.total = total;
+          statsEvents.textContent = `Gesamt-Events: ${total}`;
+        }
       }
-      const total = Number(statsEvents.dataset.total||0) + 1;
-      statsEvents.dataset.total = total;
-      statsEvents.textContent = `Gesamt-Events: ${total}`;
     });
 
   </script>
 </body>
 </html>
-
-
-
 
