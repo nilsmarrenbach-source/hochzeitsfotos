@@ -43,6 +43,20 @@
       font-family:"Great Vibes", cursive;
     }
 
+    /* Globaler Benutzername-Banner */
+    #userBanner {
+      background:#fff;
+      border-bottom:1px solid var(--border);
+      padding:10px 12px;
+      display:flex;
+      gap:10px;
+      align-items:center;
+      justify-content:center;
+    }
+    #userBanner .info { color:var(--muted); }
+    #userBanner input { padding:8px 10px; border:1px solid #e9dcd8; border-radius:10px; font:inherit; }
+    #userBanner .btn { padding:8px 12px; }
+
     /* Navigation */
     nav {
       display:flex; flex-wrap:wrap; gap:10px; justify-content:center; padding:16px;
@@ -100,30 +114,45 @@
     }
 
     /* Chat */
-    #chatHeader {
-      display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;
-    }
-    #messages {
-      height:340px; overflow:auto; border:1px solid var(--border); border-radius:12px; padding:12px; background:#fffbfa;
-    }
+    #chatHeader { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+    #messages { height:340px; overflow:auto; border:1px solid var(--border); border-radius:12px; padding:12px; background:#fffbfa; }
     .msg-wrap { display:flex; margin:6px 0; }
     .msg {
       padding:8px 10px; border-radius:10px; max-width:70%; word-wrap:break-word;
       border:1px solid #f2e7e4; background:var(--other); text-align:left;
     }
-    .msg .meta { font-size:.8rem; color:#777; margin-bottom:4px; }
+    .msg .meta { font-size:.8rem; color:#777; margin-bottom:4px; display:flex; align-items:center; gap:6px; }
+    .msg .del { display:inline-block; margin-left:6px; background:none; border:1px solid #e1c8c2; border-radius:6px; padding:2px 6px; cursor:pointer; }
     .mine-wrap { justify-content:flex-end; }
     .mine { background:var(--mine); border-color:#f0d3cc; }
     .row { display:flex; gap:8px; align-items:center; }
     input[type="text"], textarea {
       width:100%; padding:10px 12px; border:1px solid #e9dcd8; border-radius:10px; font:inherit; background:#fffdfc;
     }
+
+    /* PDF Zoom Toolbar */
+    .pdfToolbar{display:flex;gap:8px;justify-content:flex-end;margin:8px 0}
+    .pdfToolbar .btn{padding:6px 10px}
+    .pdfViewport{position:relative;overflow:auto;border:1px solid var(--border);border-radius:12px;background:#f1f1f1;height:70vh}
+    .pdfViewport iframe{width:100%;height:100%;border:0;transform-origin:top left}
+    .card{border:1px solid var(--border);border-radius:12px;padding:12px;background:#fff}
+    .stats{display:grid;grid-template-columns:1fr;gap:12px}
+    @media(min-width:800px){.stats{grid-template-columns:1fr 1fr}}
+    canvas{width:100%;height:220px;border:1px solid var(--border);border-radius:10px;background:#fff}
   </style>
 </head>
 <body>
   <header>
     <h1>Willkommen zur Hochzeit The Marrenbach's</h1>
   </header>
+
+  <!-- Globaler Benutzername -->
+  <div id="userBanner">
+    <span class="info">Dein Benutzername für Chat, Quiz, „Über uns“ & Musikwunsch:</span>
+    <input type="text" id="globalName" placeholder="z. B. Theresa" />
+    <button class="btn" id="saveName">Speichern</button>
+    <span id="nameStatus" class="muted"></span>
+  </div>
 
   <nav aria-label="Hauptnavigation">
     <button data-target="start" aria-current="page">🏠 Startseite</button>
@@ -132,7 +161,9 @@
     <button data-target="rede">💬 Hochzeitsrede</button>
     <button data-target="quiz">❓ Quiz</button>
     <button data-target="chat">💬 Chat</button>
+    <button data-target="music">🎵 Musikwunsch</button>
     <button data-target="gaesteantworten">📝 Über uns</button>
+    <button data-target="admin">🛠️ Admin</button>
   </nav>
 
   <main>
@@ -166,33 +197,40 @@
     <!-- Speisekarte -->
     <section id="speisekarte" class="section">
       <h2>🍽️ Speisekarte</h2>
-      <p class="note">Lege eine Datei <code>speisekarte.pdf</code> in dein Repo. Wenn sie fehlt, siehst du unten einen Hinweis.</p>
-      <iframe id="menuFrame" src="speisekarte.pdf" title="Speisekarte"></iframe>
+      <div class="pdfToolbar">
+        <button class="btn" onclick="zoomPDF('menuFrame','out')">−</button>
+        <button class="btn" onclick="zoomPDF('menuFrame','reset')">100%</button>
+        <button class="btn" onclick="zoomPDF('menuFrame','in')">+</button>
+        <a class="btn" href="speisekarte.pdf" target="_blank">🔎 Vollbild</a>
+      </div>
+      <div class="pdfViewport">
+        <iframe id="menuFrame" src="speisekarte.pdf" title="Speisekarte"></iframe>
+      </div>
       <div id="menuFallback" class="note" style="display:none;">Speisekarte nicht gefunden (speisekarte.pdf).</div>
     </section>
 
     <!-- Rede -->
     <section id="rede" class="section">
       <h2>💬 Hochzeitsrede</h2>
-      <p class="note">Lege eine Datei <code>hochzeitsrede.pdf</code> in dein Repo.</p>
-      <iframe id="speechFrame" src="hochzeitsrede.pdf" title="Hochzeitsrede"></iframe>
+      <div class="pdfToolbar">
+        <button class="btn" onclick="zoomPDF('speechFrame','out')">−</button>
+        <button class="btn" onclick="zoomPDF('speechFrame','reset')">100%</button>
+        <button class="btn" onclick="zoomPDF('speechFrame','in')">+</button>
+        <a class="btn" href="hochzeitsrede.pdf" target="_blank">🔎 Vollbild</a>
+      </div>
+      <div class="pdfViewport">
+        <iframe id="speechFrame" src="hochzeitsrede.pdf" title="Hochzeitsrede"></iframe>
+      </div>
       <div id="speechFallback" class="note" style="display:none;">Hochzeitsrede nicht gefunden (hochzeitsrede.pdf).</div>
     </section>
 
-    <!-- Quiz (Einzelfragen-Modus) -->
+    <!-- Quiz (Einzelfragen) -->
     <section id="quiz" class="section">
       <h2>❓ Hochzeitsquiz</h2>
-
-      <!-- Login -->
       <div id="quiz-login">
-        <p>Gib deinen Namen ein, um am Quiz teilzunehmen:</p>
-        <div class="row" style="justify-content:center">
-          <input type="text" id="username" placeholder="Dein Name" style="max-width:360px;" />
-          <button class="btn" id="quizStart">Quiz starten</button>
-        </div>
+        <p>Dein Benutzername wird automatisch genutzt (oben setzen).</p>
+        <button class="btn" id="quizStart">Quiz starten</button>
       </div>
-
-      <!-- Einzelfrage -->
       <div id="quiz-run" style="display:none">
         <div style="text-align:center; margin-bottom:8px;" class="muted">
           <span id="quiz-progress">Frage 1/10</span>
@@ -203,11 +241,7 @@
           <button class="btn" id="quizNext" disabled>Weiter</button>
         </div>
       </div>
-
-      <!-- Ergebnis -->
       <div id="result" style="display:none; text-align:center; font-weight:600; margin-top:14px"></div>
-
-      <!-- Rangliste -->
       <div class="scoreboard" style="margin-top:18px;">
         <h3 style="text-align:center">🏆 Rangliste</h3>
         <ul id="scoreboard"></ul>
@@ -217,7 +251,6 @@
     <!-- Chat -->
     <section id="chat" class="section">
       <h2>💬 Hochzeitschat</h2>
-
       <div id="chatHeader">
         <div class="muted" id="chatStatus"></div>
         <div style="display:flex; gap:8px; align-items:center;">
@@ -226,12 +259,7 @@
         </div>
       </div>
 
-      <div id="chat-login" class="row" style="justify-content:center; margin-bottom:12px;">
-        <input type="text" id="chatName" placeholder="Dein Name" style="max-width:360px;" />
-        <button class="btn" id="chatJoin">Chat betreten</button>
-      </div>
-
-      <div id="chatBox" style="display:none;">
+      <div id="chatBox">
         <div id="messages"></div>
         <div class="row" style="margin-top:10px;">
           <input type="text" id="messageInput" placeholder="Deine Nachricht" />
@@ -240,13 +268,37 @@
       </div>
     </section>
 
+    <!-- Musikwunsch -->
+    <section id="music" class="section">
+      <h2>🎵 Musikwunsch</h2>
+      <p class="muted" style="text-align:center">Jede*r darf <strong>maximal einen Wunsch pro Stunde</strong> abgeben.</p>
+      <div class="grid2">
+        <div class="card">
+          <div class="row">
+            <input type="text" id="songTitle" placeholder="Songtitel" />
+          </div>
+          <div class="row" style="margin-top:8px;">
+            <input type="text" id="songArtist" placeholder="Künstler*in" />
+          </div>
+          <div class="row" style="margin-top:8px;">
+            <input type="text" id="songNote" placeholder="Widmung/Kommentar (optional)" />
+          </div>
+          <div style="text-align:center; margin-top:10px;">
+            <button class="btn" id="songSend">Wunsch senden</button>
+            <div id="songHint" class="muted" style="margin-top:6px;"></div>
+          </div>
+        </div>
+        <div class="card">
+          <h3 style="text-align:center;margin:0 0 8px;">Letzte Wünsche</h3>
+          <div id="songList"></div>
+        </div>
+      </div>
+    </section>
+
     <!-- Über uns -->
     <section id="gaesteantworten" class="section">
       <h2>📝 Über uns</h2>
       <p class="muted">Schreib eine kurze Zeile – was macht <strong>Lea</strong> und was macht <strong>Nils</strong> aus?</p>
-      <div class="row" style="margin-bottom:8px;">
-        <input id="aboutName" type="text" placeholder="Dein Name (optional)" />
-      </div>
       <div class="grid2">
         <div>
           <h3>Zu Lea</h3>
@@ -265,7 +317,46 @@
         <div id="aboutList" class="grid2"></div>
       </div>
     </section>
+
+    <!-- Admin -->
+    <section id="admin" class="section">
+      <h2>🛠️ Admin-Dashboard</h2>
+      <p class="muted" id="adminState">Nicht im Adminmodus. Klicke im Chat oben rechts auf „Admin“ und gib den Code ein.</p>
+      <div class="stats">
+        <div class="card">
+          <h3 style="margin-top:0;">Nutzer & Aktivität</h3>
+          <div id="statsUsers" class="muted">–</div>
+          <div id="statsEvents" class="muted">–</div>
+        </div>
+        <div class="card">
+          <h3 style="margin-top:0;">Nutzung nach Stunde (heute)</h3>
+          <canvas id="chartUsage"></canvas>
+        </div>
+      </div>
+      <div class="card" style="margin-top:12px;">
+        <h3 style="margin-top:0;">Letzte Aktionen</h3>
+        <div id="eventsList"></div>
+      </div>
+    </section>
   </main>
+
+  <!-- PDF-Zoom -->
+  <script>
+    const __pdfScale = {};
+    function zoomPDF(frameId, action){
+      const frame = document.getElementById(frameId);
+      if(!frame) return;
+      const cur = __pdfScale[frameId] ?? 1;
+      let s = cur;
+      if(action==='in')  s = Math.min(3,  (cur + 0.2));
+      if(action==='out') s = Math.max(0.5,(cur - 0.2));
+      if(action==='reset') s = 1;
+      __pdfScale[frameId] = s;
+      frame.style.transform = `scale(${s})`;
+      frame.style.width = `${100/s}%`;
+      frame.style.height = '100%';
+    }
+  </script>
 
   <!-- Navigation + PDF-Fallbacks -->
   <script>
@@ -296,8 +387,8 @@
     /* Firebase ES Modules – stabile 9.23.0 */
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
     import {
-      getDatabase, ref, push,
-      onChildAdded, onChildRemoved, remove
+      getDatabase, ref, push, onChildAdded, onChildRemoved, remove,
+      get, set, update, child
     } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
     /* Firebase-Konfiguration */
@@ -314,7 +405,59 @@
     const app = initializeApp(firebaseConfig);
     const db  = getDatabase(app);
 
-    /* Quizfragen (deine 10) */
+    /* ===== Globaler Benutzername ===== */
+    const nameInput = document.getElementById('globalName');
+    const saveNameBtn = document.getElementById('saveName');
+    const nameStatus = document.getElementById('nameStatus');
+
+    const ADMIN_CODE = "Marrenbach24!";
+    let isAdmin = false;
+
+    function getUser(){
+      return (localStorage.getItem('appUserName')||"").trim();
+    }
+    function setUser(n){
+      localStorage.setItem('appUserName', n);
+      nameStatus.textContent = `🔒 Eingeloggt als: ${n}`;
+      // als „user“ in DB registrieren / aktualisieren
+      const uref = ref(db, 'users/' + encodeURIComponent(n));
+      update(uref, { lastSeen: Date.now(), createdAt: Date.now() }).catch(()=>{});
+      logEvent('login');
+    }
+
+    // init Banner
+    const existing = getUser();
+    if(existing){
+      nameInput.value = existing;
+      nameStatus.textContent = `🔒 Eingeloggt als: ${existing}`;
+    }
+
+    saveNameBtn.addEventListener('click', () => {
+      const n = (nameInput.value||"").trim();
+      if(!n) return alert("Bitte gib einen Namen ein.");
+      if(getUser()){ return alert("Benutzername ist bereits gesetzt (für diese Sitzung)."); }
+      setUser(n);
+    });
+
+    // kleine Helper
+    function requireUser(){
+      const u = getUser();
+      if(!u){ alert("Bitte oben deinen Benutzernamen setzen."); }
+      return !!u;
+    }
+    function displayTime(ts){
+      return new Date(ts).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+    }
+
+    /* ===== Events / Stats logging ===== */
+    function logEvent(action, extra = {}){
+      const u = getUser() || 'Gast';
+      push(ref(db, 'events'), { user: u, action, ts: Date.now(), ...extra });
+    }
+    // Beim Laden: „visit“
+    logEvent('visit');
+
+    /* ===== QUIZ ===== */
     const questions = [
       { q:'Welches Haushaltsgerät wird von Lea täglich genutzt und treibt Nils in den Wahnsinn?', a:['Trockner','Staubsauger','Wasserkocher'], correct:'Staubsauger' },
       { q:'Wann sind Lea und Nils zusammengekommen?', a:['08.03.2017','18.03.2018','28.03.2017'], correct:'28.03.2017' },
@@ -328,7 +471,6 @@
       { q:'Wer hat zuhause die Hosen an?', a:['Lea','Nils','Beide'], correct:'Beide' },
     ];
 
-    /* === Quiz (Einzelfragen) === */
     const quizStartBtn = document.getElementById('quizStart');
     const quizLogin    = document.getElementById('quiz-login');
     const quizRun      = document.getElementById('quiz-run');
@@ -367,9 +509,8 @@
     }
 
     function startQuiz() {
-      const name = (document.getElementById('username')?.value || "").trim();
-      if (!name) return alert("Bitte gib einen Namen ein.");
-      quizUser = name;
+      if(!requireUser()) return;
+      quizUser = getUser();
       currentIndex = 0;
       givenAnswers.fill(null);
 
@@ -377,6 +518,7 @@
       quizRun.style.display   = 'block';
       resultEl.style.display  = 'none';
       renderQuestion();
+      logEvent('quiz_start');
     }
 
     quizStartBtn.addEventListener('click', startQuiz);
@@ -384,27 +526,19 @@
     quizNextBtn.addEventListener('click', () => {
       if (currentIndex === questions.length - 1) {
         let score = 0;
-        questions.forEach((q, i) => {
-          if (givenAnswers[i] === q.correct) score++;
-        });
+        questions.forEach((q, i) => { if (givenAnswers[i] === q.correct) score++; });
 
-        push(ref(db, 'scores'), {
-          name: quizUser,
-          score,
-          total: questions.length,
-          ts: Date.now()
-        });
-
+        push(ref(db, 'scores'), { name: quizUser, score, total: questions.length, ts: Date.now() });
         quizRun.style.display  = 'none';
         resultEl.style.display = 'block';
         resultEl.textContent   = `${quizUser}, du hast ${score} von ${questions.length} Punkten erreicht!`;
+        logEvent('quiz_finish', { score });
         return;
       }
       currentIndex++;
       renderQuestion();
     });
 
-    // Rangliste live
     const scores = [];
     onChildAdded(ref(db, 'scores'), (snap) => {
       const v = snap.val();
@@ -415,24 +549,18 @@
         .join('');
     });
 
-    /* === Chat mit Admin-Funktion === */
-    const chatJoinBtn  = document.getElementById('chatJoin');
-    const chatSendBtn  = document.getElementById('chatSend');
-    const chatLoginBox = document.getElementById('chat-login');
-    const chatBox      = document.getElementById('chatBox');
+    /* ===== CHAT mit Admin-Löschen ===== */
+    const chatSendBtn = document.getElementById('chatSend');
     const messagesEl   = document.getElementById('messages');
     const chatStatus   = document.getElementById('chatStatus');
     const chatUserBadge= document.getElementById('chatUserBadge');
     const adminLoginBtn= document.getElementById('adminLogin');
 
-    let chatUser = "";
-    const ADMIN_CODE = "Marrenbach24!"; // <<< hier deinen Code festlegen
-    let isAdmin = false;
-
-    function refreshAdminUI() {
-      document.querySelectorAll('.msg [data-action="delete"]').forEach(btn => {
-        btn.style.display = isAdmin ? 'inline-block' : 'none';
-      });
+    if(getUser()){
+      chatUserBadge.textContent = `🔒 Eingeloggt als: ${getUser()}`;
+      chatStatus.textContent = "Verbunden";
+    } else {
+      chatStatus.textContent = "Bitte oben Benutzernamen setzen.";
     }
 
     adminLoginBtn?.addEventListener('click', () => {
@@ -440,51 +568,34 @@
       if (code === ADMIN_CODE) {
         isAdmin = true;
         alert("Admin-Modus aktiv.");
+        document.getElementById('adminState').textContent = "Adminmodus aktiv.";
         refreshAdminUI();
       } else if (code !== null) {
         alert("Falscher Code.");
       }
     });
 
-    // beim Laden: gespeicherten Namen nutzen (nicht änderbar)
-    const saved = localStorage.getItem('chatName');
-    if (saved && saved.trim() !== "") {
-      chatUser = saved.trim();
-      chatLoginBox.style.display = 'none';
-      chatBox.style.display = 'block';
-      chatUserBadge.textContent = `🔒 Eingeloggt als: ${chatUser}`;
-      chatStatus.textContent = "Verbunden";
-    } else {
-      chatStatus.textContent = "Bitte Namen eingeben, um den Chat zu nutzen.";
+    function refreshAdminUI() {
+      document.querySelectorAll('.msg .del').forEach(btn => {
+        btn.style.display = isAdmin ? 'inline-block' : 'none';
+      });
     }
 
-    function joinChat(){
-      if (chatUser) return; // bereits gesetzt
-      const n = (document.getElementById('chatName')?.value || "").trim();
-      if (!n) return alert("Bitte gib einen Namen ein.");
-      chatUser = n;
-      localStorage.setItem('chatName', chatUser); // fest speichern
-      chatLoginBox.style.display = 'none';
-      chatBox.style.display = 'block';
-      chatUserBadge.textContent = `🔒 Eingeloggt als: ${chatUser}`;
-      chatStatus.textContent = "Verbunden";
-    }
     function sendMessage(){
+      if(!requireUser()) return;
       const inp = document.getElementById('messageInput');
       const msg = (inp?.value || "").trim();
-      if (!msg || !chatUser) return;
-      push(ref(db, 'messages'), { name: chatUser, message: msg, ts: Date.now() });
+      if (!msg) return;
+      push(ref(db, 'messages'), { name: getUser(), message: msg, ts: Date.now() });
       inp.value = "";
+      logEvent('chat_send');
     }
-    chatJoinBtn.addEventListener('click', joinChat);
     chatSendBtn.addEventListener('click', sendMessage);
 
-    // Nachrichten hinzufügen (mit Lösch-Button für Admin)
     onChildAdded(ref(db, 'messages'), (snap) => {
       const id = snap.key;
       const m  = snap.val();
-      const mine = (chatUser && m.name === chatUser);
-      const time = new Date(m.ts).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+      const mine = (getUser() && m.name === getUser());
 
       const wrap = document.createElement('div');
       wrap.className = mine ? 'msg-wrap mine-wrap' : 'msg-wrap';
@@ -492,62 +603,201 @@
 
       const bubble = document.createElement('div');
       bubble.className = mine ? 'msg mine' : 'msg';
+      const time = displayTime(m.ts);
 
-      const delBtn = `
-        <button data-action="delete" data-id="${id}" title="Nachricht löschen"
-          style="display:${isAdmin ? 'inline-block' : 'none'}; margin-left:8px; background:none; border:1px solid #e1c8c2; border-radius:6px; padding:2px 6px; cursor:pointer;">
-          ✕
-        </button>`;
-
-      bubble.innerHTML = `<div class="meta">[${time}] <strong>${m.name}</strong> ${delBtn}</div><div>${m.message}</div>`;
-
-      bubble.querySelector('[data-action="delete"]')?.addEventListener('click', (ev) => {
-        const msgId = ev.currentTarget.getAttribute('data-id');
+      const del = document.createElement('button');
+      del.className = 'del';
+      del.textContent = '✕';
+      del.style.display = isAdmin ? 'inline-block' : 'none';
+      del.addEventListener('click', () => {
         if (!isAdmin) return;
         if (confirm("Diese Nachricht wirklich löschen?")) {
-          remove(ref(db, 'messages/' + msgId));
+          remove(ref(db, 'messages/' + id));
         }
       });
 
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+      meta.innerHTML = `[${time}] <strong>${m.name}</strong>`;
+      meta.appendChild(del);
+
+      const txt = document.createElement('div');
+      txt.textContent = m.message;
+
+      bubble.appendChild(meta);
+      bubble.appendChild(txt);
       wrap.appendChild(bubble);
       messagesEl.appendChild(wrap);
       messagesEl.scrollTop = messagesEl.scrollHeight;
     });
 
-    // Nachrichten entfernen (DOM bereinigen)
     onChildRemoved(ref(db, 'messages'), (snap) => {
       const id = snap.key;
       const el = document.querySelector(`.msg-wrap[data-id="${id}"]`);
       if (el) el.remove();
     });
 
-    /* === Über uns === */
+    /* ===== ÜBER UNS – Einträge + Admin-Löschen ===== */
     const aboutSendBtn = document.getElementById('aboutSend');
     const aboutList    = document.getElementById('aboutList');
 
     function submitAbout(){
+      if(!requireUser()) return;
       const lea  = (document.getElementById('aboutLea')?.value || "").trim();
       const nils = (document.getElementById('aboutNils')?.value || "").trim();
-      const from = (document.getElementById('aboutName')?.value || "").trim();
+      const from = getUser();
       if (!lea && !nils) return alert("Bitte schreibe etwas zu Lea oder Nils.");
       if (lea)  push(ref(db, 'about'), { who:'Lea',  text: lea,  from, ts: Date.now() });
       if (nils) push(ref(db, 'about'), { who:'Nils', text: nils, from, ts: Date.now() });
       const l = document.getElementById('aboutLea');  if (l) l.value = "";
       const n = document.getElementById('aboutNils'); if (n) n.value = "";
-      const f = document.getElementById('aboutName'); if (f) f.value = "";
+      logEvent('about_send');
     }
     aboutSendBtn.addEventListener('click', submitAbout);
 
     onChildAdded(ref(db, 'about'), (snap) => {
-      const v = snap.val();
+      const id = snap.key;
+      const v  = snap.val();
       const card = document.createElement('div');
       card.className = 'question';
+      card.dataset.id = id;
       const from = v.from ? ` – <span class="muted">von ${v.from}</span>` : '';
-      card.innerHTML = `<strong>${v.who}</strong>${from}<div style="margin-top:6px;">${v.text}</div>`;
+      const del = isAdmin ? `<button class="del" data-id="${id}">✕</button>` : '';
+      card.innerHTML = `<div><strong>${v.who}</strong>${from} ${del}</div><div style="margin-top:6px;">${v.text}</div>`;
+      card.querySelector('.del')?.addEventListener('click', () => {
+        if(!isAdmin) return;
+        if(confirm("Diesen Eintrag löschen?")) remove(ref(db, 'about/' + id));
+      });
       aboutList.appendChild(card);
+      refreshAdminUI();
     });
+
+    onChildRemoved(ref(db, 'about'), (snap) => {
+      const id = snap.key;
+      const el = document.querySelector(`.question[data-id="${id}"]`);
+      if (el) el.remove();
+    });
+
+    /* ===== MUSIKWUNSCH – 1 pro Stunde ===== */
+    const songSendBtn = document.getElementById('songSend');
+    const songHint = document.getElementById('songHint');
+    const songList = document.getElementById('songList');
+
+    songSendBtn.addEventListener('click', async () => {
+      if(!requireUser()) return;
+      const title = (document.getElementById('songTitle')?.value || '').trim();
+      const artist= (document.getElementById('songArtist')?.value || '').trim();
+      const note  = (document.getElementById('songNote')?.value || '').trim();
+      if(!title || !artist) return alert("Bitte Songtitel und Künstler*in angeben.");
+
+      const uname = getUser();
+      const limitRef = ref(db, 'musicLimits/' + encodeURIComponent(uname));
+      const snap = await get(limitRef);
+      const now = Date.now();
+      const hourMs = 60*60*1000;
+      const last = snap.exists() ? Number(snap.val().lastTs||0) : 0;
+
+      if (now - last < hourMs) {
+        const mins = Math.ceil((hourMs - (now-last)) / 60000);
+        songHint.textContent = `Bitte warte noch ${mins} Min., bevor du einen neuen Wunsch sendest.`;
+        return;
+      }
+
+      // Wunsch speichern
+      push(ref(db, 'music'), { user: uname, title, artist, note, ts: now });
+      // Limit setzen
+      await set(limitRef, { lastTs: now });
+
+      // Felder leeren
+      document.getElementById('songTitle').value = '';
+      document.getElementById('songArtist').value = '';
+      document.getElementById('songNote').value = '';
+      songHint.textContent = 'Danke! Dein Wunsch wurde gespeichert.';
+      logEvent('music_send');
+    });
+
+    onChildAdded(ref(db, 'music'), (snap) => {
+      const m = snap.val();
+      const div = document.createElement('div');
+      div.className = 'question';
+      div.dataset.id = snap.key;
+      const delBtn = isAdmin ? `<button class="del" data-id="${snap.key}">✕</button>` : '';
+      div.innerHTML = `<strong>${m.title}</strong> – ${m.artist} <span class="muted">(${m.user}, ${displayTime(m.ts)})</span> ${delBtn}
+                       ${m.note ? `<div class="muted" style="margin-top:6px;">„${m.note}“</div>` : ''}`;
+      div.querySelector('.del')?.addEventListener('click', () => {
+        if(!isAdmin) return;
+        if(confirm("Diesen Musikwunsch löschen?")) remove(ref(db, 'music/' + snap.key));
+      });
+      songList.prepend(div);
+      refreshAdminUI();
+    });
+    onChildRemoved(ref(db, 'music'), (snap) => {
+      const el = document.querySelector(`[data-id="${snap.key}"]`);
+      if(el) el.remove();
+    });
+
+    /* ===== ADMIN: einfache Statistiken ===== */
+    const statsUsers = document.getElementById('statsUsers');
+    const statsEvents = document.getElementById('statsEvents');
+    const eventsList = document.getElementById('eventsList');
+    const chartCanvas = document.getElementById('chartUsage');
+
+    // Nutzer zählen
+    const userSet = new Set();
+    onChildAdded(ref(db, 'users'), (snap) => {
+      const uname = decodeURIComponent(snap.key);
+      userSet.add(uname);
+      statsUsers.textContent = `Einzigartige Nutzer*innen: ${userSet.size}`;
+    });
+
+    // Events anzeigen + heutige Nutzung nach Stunden
+    const todayHours = Array(24).fill(0);
+    function redrawChart(){
+      const ctx = chartCanvas.getContext('2d');
+      const w = chartCanvas.width = chartCanvas.clientWidth;
+      const h = chartCanvas.height = 220;
+      ctx.clearRect(0,0,w,h);
+      const max = Math.max(1, ...todayHours);
+      const barW = w / 24 - 4;
+      for(let i=0;i<24;i++){
+        const x = i * (w/24) + 2;
+        const val = todayHours[i];
+        const bh = (val / max) * (h - 30);
+        ctx.fillRect(x, h-20-bh, barW, bh);
+        ctx.fillText(String(i), x+barW/2-4, h-5);
+      }
+    }
+    function isToday(ts){
+      const d = new Date(ts), n=new Date();
+      return d.toDateString() === n.toDateString();
+    }
+    onChildAdded(ref(db, 'events'), (snap) => {
+      const e = snap.val();
+      // Liste
+      const li = document.createElement('div');
+      li.className = 'muted';
+      li.textContent = `[${new Date(e.ts).toLocaleString()}] ${e.user}: ${e.action}`;
+      eventsList.prepend(li);
+      // Stunde zählen (nur heute)
+      if(isToday(e.ts)){
+        const hr = new Date(e.ts).getHours();
+        todayHours[hr] = (todayHours[hr]||0)+1;
+        redrawChart();
+      }
+      // Gesamt
+      const total = Number(statsEvents.dataset.total||0) + 1;
+      statsEvents.dataset.total = total;
+      statsEvents.textContent = `Gesamt-Events: ${total}`;
+    });
+
+    // Wenn Name gesetzt/aktiv ⇒ user in DB registrieren
+    if(getUser()){
+      const uref = ref(db, 'users/' + encodeURIComponent(getUser()));
+      update(uref, { lastSeen: Date.now(), createdAt: Date.now() }).catch(()=>{});
+    }
   </script>
 </body>
 </html>
+
 
 
